@@ -1,79 +1,222 @@
-// Inicialização do canvas e contexto de desenho
+// ========== FUNDO MARINHO ==========
+function createMarineBackground() {
+    const background = document.getElementById('marineBackground');
+    if (!background) return;
+
+    // Criar bolhas
+    for (let i = 0; i < 15; i++) {
+        createBubble(background);
+    }
+
+    // Criar peixes
+    for (let i = 0; i < 8; i++) {
+        createFish(background);
+    }
+
+    // Criar algas
+    for (let i = 0; i < 6; i++) {
+        createSeaweed(background);
+    }
+
+    // Criar tesouros
+    for (let i = 0; i < 3; i++) {
+        createTreasure(background);
+    }
+
+    // Criar estrelas do mar
+    for (let i = 0; i < 4; i++) {
+        createStarfish(background);
+    }
+
+    // Criar tartarugas
+    for (let i = 0; i < 2; i++) {
+        createTurtle(background);
+    }
+}
+
+function createBubble(container) {
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+
+    const size = Math.random() * 30 + 10;
+    const left = Math.random() * 100;
+    const duration = Math.random() * 10 + 10;
+    const delay = Math.random();
+
+    bubble.style.width = `${size}px`;
+    bubble.style.height = `${size}px`;
+    bubble.style.left = `${left}%`;
+    bubble.style.animationDuration = `${duration}s`;
+    bubble.style.animationDelay = `${delay}s`;
+
+    container.appendChild(bubble);
+}
+
+function createFish(container) {
+    const fish = document.createElement('div');
+    fish.className = 'fish';
+    const top = Math.random() * 70 + 10;
+    const duration = Math.random() * 15 + 10;
+    const delay = Math.random();
+    const size = Math.random() * 20 + 20;
+
+    fish.style.top = `${top}%`;
+    fish.style.fontSize = `${size}px`;
+    fish.style.animationDuration = `${duration}s`;
+    fish.style.animationDelay = `${delay}s`;
+
+    // Direção aleatória
+    const goRight = Math.random() > 0.5;
+    if (goRight) {
+        fish.style.left = '-50px';
+        fish.style.animationName = 'swim-right';
+    } else {
+        fish.style.left = 'calc(100% + 50px)';
+        fish.style.animationName = 'swim-left';
+    }
+
+    container.appendChild(fish);
+}
+
+function createSeaweed(container) {
+    const seaweed = document.createElement('div');
+    seaweed.className = 'seaweed';
+
+    const left = Math.random() * 90 + 5;
+    const height = Math.random() * 80 + 60;
+
+    seaweed.style.left = `${left}%`;
+    seaweed.style.height = `${height}px`;
+
+    container.appendChild(seaweed);
+}
+
+function createTreasure(container) {
+    const treasure = document.createElement('div');
+    treasure.className = 'treasure-chest';
+
+    const left = Math.random() * 80 + 10;
+
+    treasure.style.left = `${left}%`;
+
+    container.appendChild(treasure);
+}
+
+function createStarfish(container) {
+    const starfish = document.createElement('div');
+    starfish.className = 'starfish';
+
+    const left = Math.random() * 85 + 5;
+
+    starfish.style.left = `${left}%`;
+
+    container.appendChild(starfish);
+}
+
+function createTurtle(container) {
+    const turtle = document.createElement('div');
+    turtle.className = 'sea-turtle';
+
+    const top = Math.random() * 50 + 20;
+    const duration = Math.random() * 25 + 20;
+    const delay = Math.random() * 10;
+
+    turtle.style.top = `${top}%`;
+    turtle.style.animationDuration = `${duration}s`;
+    turtle.style.animationDelay = `${delay}s`;
+
+    // Direção aleatória
+    const goRight = Math.random() > 0.5;
+    if (goRight) {
+        turtle.style.left = '-50px';
+        turtle.style.animationName = 'turtle-swim-right';
+    } else {
+        turtle.style.left = 'calc(100% + 50px)';
+        turtle.style.animationName = 'turtle-swim-left';
+    }
+
+    container.appendChild(turtle);
+}
+
+// ========== ANIMAÇÃO DA ÁGUA ==========
 const canvas = document.getElementById('ballCanvas');
 const ctx = canvas.getContext('2d');
 
-// Elementos da interface
-const bottleButton = document.getElementById('bottleButton');
-const shirtButton = document.getElementById('shirtButton');
+const ballBtn = document.getElementById('ballButton');
+const pantsBtn = document.getElementById('pantsButton');
+const emptyBtn = document.getElementById('emptyButton');
+const info = document.getElementById('waterInfo');
 
-// Configurações de posicionamento e tamanho
-const centerX = canvas.width / 2;  // Centro X do canvas
-const centerY = canvas.height / 2;  // Centro Y do canvas
-const radius = 80;  // Raio da bola e tamanho base das calças
+const centerX = canvas.width / 2;
+const centerY = canvas.height / 2;
+const radius = 90;
 
-// Variáveis para controle do nível de água
-let waterLevel = 0;  // Nível atual da água (0 a maxWaterLevel)
-const maxWaterLevel = radius * 2;  // Nível máximo que a água pode atingir
-let targetWaterLevel = 0;  // Nível alvo para animação
-const fillTimeInSeconds = 5;  // Tempo total desejado para preencher (em segundos)
-let currentShape = 'ball';  // Forma atual selecionada ('ball' ou 'pants')
+const capacities = { ball: 3000, pants: 10000 };
+const fillSpeed = 0.8;
+let waterLevel = 0;
+let targetWaterLevel = 0;
+let currentShape = 'ball';
+const maxWaterLevel = radius * 2;
+let isEmptying = false;
 
-// Capacidade máxima de água para cada forma em litros
-const capacities = {
-    ball: 3,    // Bola comporta 3 litros
-    pants: 7    // Calças comportam 7 litros
-};
+// Função para mostrar/esconder o botão esvaziar
+function updateEmptyButtonVisibility() {
+    if (waterLevel > 0 && !isEmptying) {
+        emptyBtn.style.display = 'inline-block';
+        emptyBtn.style.animation = 'float 3s ease-in-out infinite';
+        emptyBtn.style.opacity = '1';
+        emptyBtn.style.transform = 'scale(1)';
+    } else if (waterLevel === 0) {
+        emptyBtn.style.display = 'none';
+        isEmptying = false;
+    }
+}
 
-// Função para desenhar as calças
+// Função para animação de bolha a arrebentar
+function bubblePopAnimation(button) {
+    isEmptying = true;
+    button.style.animation = 'none';
+    button.classList.add('bubble-pop');
+
+    setTimeout(() => {
+        button.classList.remove('bubble-pop');
+        button.style.display = 'none';
+    }, 600);
+}
+
 function drawPants() {
-    ctx.save();  // Salva o estado atual do contexto
-    
-    // Desenha o formato das calças
     ctx.beginPath();
-    // Cintura das calças
     ctx.moveTo(centerX - radius, centerY - radius);
     ctx.lineTo(centerX + radius, centerY - radius);
-    // Perna direita
     ctx.lineTo(centerX + radius, centerY + radius);
-    // Região central (entre as pernas)
     ctx.lineTo(centerX, centerY);
-    // Perna esquerda
     ctx.lineTo(centerX - radius, centerY + radius);
     ctx.closePath();
-    
-    // Define a cor e desenha o contorno
     ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
     ctx.stroke();
 }
 
-// Função principal de desenho - chamada a cada frame
-function drawBall() {
-    // Limpa todo o canvas para redesenhar
+function drawBallOrPants() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Salva o estado do contexto para restaurar depois
-    ctx.save();
 
     if (currentShape === 'ball') {
-        // Desenha o círculo exterior (bola)
         ctx.beginPath();
         ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
         ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
         ctx.stroke();
     } else {
-        // Desenha as calças se não for bola
         drawPants();
     }
 
-    // Desenho da água
     if (waterLevel > 0) {
+        ctx.save();
         if (currentShape === 'ball') {
-            // Define a área de recorte para a bola
             ctx.beginPath();
             ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
             ctx.clip();
         } else {
-            // Define a área de recorte para as calças
             ctx.beginPath();
             ctx.moveTo(centerX - radius, centerY - radius);
             ctx.lineTo(centerX + radius, centerY - radius);
@@ -84,123 +227,100 @@ function drawBall() {
             ctx.clip();
         }
 
-        // Calcula a altura da água baseado no nível atual
         const waterHeight = (waterLevel / maxWaterLevel) * (radius * 2);
         const waterY = centerY + radius - waterHeight;
 
-        // Desenha o retângulo base da água
-        ctx.beginPath();
-        ctx.rect(centerX - radius, waterY, radius * 2, waterHeight);
-        
-        // Cria gradiente para efeito de água
         const gradient = ctx.createLinearGradient(0, centerY - radius, 0, centerY + radius);
-        gradient.addColorStop(0, 'rgba(0, 150, 255, 0.4)');  // Água mais clara no topo
-        gradient.addColorStop(1, 'rgba(0, 100, 255, 0.6)');  // Água mais escura embaixo
-        
-        ctx.fillStyle = gradient;
-        ctx.fill();
-        
-        // Adiciona efeito de onda na superfície da água
+        gradient.addColorStop(0, 'rgba(0, 170, 255, 0.5)');
+        gradient.addColorStop(1, 'rgba(0, 100, 255, 0.7)');
+
         ctx.beginPath();
-        ctx.moveTo(centerX - radius, waterY);
-        for (let x = centerX - radius; x <= centerX + radius; x += 5) {
-            // Cria movimento de onda usando seno
-            const wave = Math.sin((x + Date.now() / 300) / 10) * 2;
+        for (let x = centerX - radius; x <= centerX + radius; x += 2) {
+            const wave = Math.sin((x + Date.now() / 120) / 10) * 3;
             ctx.lineTo(x, waterY + wave);
         }
-        ctx.lineTo(centerX + radius, waterY);
-        ctx.fillStyle = gradient;
-        ctx.fill();
-        
-        // Reset clip
-        ctx.restore();
-
-        // Animate water level
-        if (waterLevel < targetWaterLevel) {
-            // Calcula a velocidade com base na capacidade do recipiente
-            const maxCapacity = capacities[currentShape];
-            // Ajusta a velocidade para manter o tempo de preenchimento constante
-            const fillSpeed = (maxWaterLevel / (fillTimeInSeconds * 60)) * (maxCapacity / 3);
-            
-            // Atualiza o nível da água
-            waterLevel = Math.min(waterLevel + fillSpeed, targetWaterLevel);
-            
-            // Atualiza o display com as informações da água
-            const currentLiters = (waterLevel / maxWaterLevel) * maxCapacity;
-            document.getElementById('waterInfo').textContent = 
-                `${currentLiters.toFixed(1)} L / ${maxCapacity} L`;
-        }
-    }
-}
-
-// Função para verificar se um clique está dentro da forma selecionada
-function isClickInShape(x, y) {
-    if (currentShape === 'ball') {
-        // Para a bola: calcula a distância do clique até o centro
-        // Se a distância for menor que o raio, o clique foi dentro da bola
-        const distance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
-        return distance <= radius;
-    } else {
-        // Para as calças: usa o método isPointInPath para verificar se o clique
-        // está dentro do caminho definido pelas calças
-        ctx.beginPath();
-        ctx.moveTo(centerX - radius, centerY - radius);
-        ctx.lineTo(centerX + radius, centerY - radius);
         ctx.lineTo(centerX + radius, centerY + radius);
-        ctx.lineTo(centerX, centerY);
         ctx.lineTo(centerX - radius, centerY + radius);
         ctx.closePath();
-        return ctx.isPointInPath(x, y);
+
+        ctx.fillStyle = gradient;
+        ctx.fill();
+        ctx.restore();
+    }
+
+    if (waterLevel < targetWaterLevel) {
+        waterLevel = Math.min(waterLevel + fillSpeed, targetWaterLevel);
+    } else if (waterLevel > targetWaterLevel) {
+        waterLevel = Math.max(waterLevel - fillSpeed, targetWaterLevel);
+    }
+
+    const currentLiters = (waterLevel / maxWaterLevel) * capacities[currentShape];
+    info.textContent = `${currentLiters.toFixed(1)} L / ${capacities[currentShape]} L`;
+
+    if (!isEmptying) {
+        updateEmptyButtonVisibility();
     }
 }
 
 // Evento de clique no canvas
-canvas.addEventListener('click', function(event) {
-    // Obtém a posição do clique relativa ao canvas
+canvas.addEventListener('click', e => {
     const rect = canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-    
-    // Verifica se o clique foi dentro da forma
-    if (isClickInShape(x, y)) {
-        // Define o nível alvo de água para o máximo
-        targetWaterLevel = maxWaterLevel;
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    if (currentShape === 'ball') {
+        const d = Math.hypot(x - centerX, y - centerY);
+        if (d <= radius) {
+            targetWaterLevel = maxWaterLevel;
+            isEmptying = false;
+        }
+    } else {
+        ctx.beginPath();
+        drawPants();
+        if (ctx.isPointInPath(x, y)) {
+            targetWaterLevel = maxWaterLevel;
+            isEmptying = false;
+        }
     }
 });
 
-// Manipulador de evento para o botão da bola
-ballButton.addEventListener('click', function() {
-    // Muda para a forma da bola
+// Botão da bola
+ballBtn.onclick = () => {
     currentShape = 'ball';
-    // Reinicia os níveis de água
     waterLevel = 0;
     targetWaterLevel = 0;
-    // Atualiza o display com a capacidade da bola
-    document.getElementById('waterInfo').textContent = `0.0 L / ${capacities.ball} L`;
-    // Atualiza os estilos dos botões
-    ballButton.classList.add('active');
-    pantsButton.classList.remove('active');
-});
+    ballBtn.classList.add('active');
+    pantsBtn.classList.remove('active');
+    info.textContent = `0.0 L / ${capacities.ball} L`;
+    isEmptying = false;
+    updateEmptyButtonVisibility();
+};
 
-// Manipulador de evento para o botão das calças
-pantsButton.addEventListener('click', function() {
-    // Muda para a forma das calças
+// Botão das calças
+pantsBtn.onclick = () => {
     currentShape = 'pants';
-    // Reinicia os níveis de água
     waterLevel = 0;
     targetWaterLevel = 0;
-    // Atualiza o display com a capacidade das calças
-    document.getElementById('waterInfo').textContent = `0.0 L / ${capacities.pants} L`;
-    // Atualiza os estilos dos botões
-    pantsButton.classList.add('active');
-    ballButton.classList.remove('active');
-});
+    pantsBtn.classList.add('active');
+    ballBtn.classList.remove('active');
+    info.textContent = `0.0 L / ${capacities.pants} L`;
+    isEmptying = false;
+    updateEmptyButtonVisibility();
+};
 
-// Inicia a animação
+// Botão esvaziar
+emptyBtn.onclick = () => {
+    targetWaterLevel = 0;
+    bubblePopAnimation(emptyBtn);
+};
+
 function animate() {
-    drawBall();
+    drawBallOrPants();
     requestAnimationFrame(animate);
 }
 
-// Começa a animação
-animate();
+// ========== INICIALIZAÇÃO ==========
+document.addEventListener('DOMContentLoaded', function() {
+    createMarineBackground();
+    animate();
+});
