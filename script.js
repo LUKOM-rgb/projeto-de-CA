@@ -41,7 +41,7 @@ function createBubble(container) {
     const size = Math.random() * 30 + 10;
     const left = Math.random() * 100;
     const duration = Math.random() * 10 + 10;
-    const delay = Math.random();
+    const delay = Math.random() * 15;
 
     bubble.style.width = `${size}px`;
     bubble.style.height = `${size}px`;
@@ -55,9 +55,10 @@ function createBubble(container) {
 function createFish(container) {
     const fish = document.createElement('div');
     fish.className = 'fish';
+
     const top = Math.random() * 70 + 10;
     const duration = Math.random() * 15 + 10;
-    const delay = Math.random();
+    const delay = Math.random() * 5;
     const size = Math.random() * 20 + 20;
 
     fish.style.top = `${top}%`;
@@ -159,6 +160,99 @@ let currentShape = 'ball';
 const maxWaterLevel = radius * 2;
 let isEmptying = false;
 
+// Array para guardar as posições das bolhas
+let bubblePositions = [];
+
+// Função para posicionar botões aleatoriamente
+function positionButtonsRandomly() {
+    const controls = document.querySelector('.bubble-container');
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    // Posições aleatórias para os botões
+    const positions = [
+        { top: '10%', left: '10%' },    // Canto superior esquerdo
+        { top: '10%', left: '80%' },    // Canto superior direito
+        { top: '80%', left: '10%' },    // Canto inferior esquerdo
+        { top: '80%', left: '80%' },    // Canto inferior direito
+        { top: '40%', left: '5%' },     // Centro esquerdo
+        { top: '40%', left: '85%' },    // Centro direito
+        { top: '20%', left: '50%' },    // Topo centro
+        { top: '70%', left: '50%' }     // Fundo centro
+    ];
+
+    // Embaralhar as posições
+    const shuffledPositions = [...positions].sort(() => Math.random() - 0.5);
+
+    // Aplicar posições aos botões
+    const buttons = controls.querySelectorAll('.bubble-button');
+    buttons.forEach((button, index) => {
+        if (shuffledPositions[index]) {
+            button.style.position = 'absolute';
+            button.style.top = shuffledPositions[index].top;
+            button.style.left = shuffledPositions[index].left;
+            button.style.transform = 'translate(-50%, -50%)';
+            button.style.zIndex = '100';
+        }
+    });
+
+    // Posicionar o container dos botões
+    controls.style.position = 'fixed';
+    controls.style.top = '0';
+    controls.style.left = '0';
+    controls.style.width = '100%';
+    controls.style.height = '100%';
+    controls.style.pointerEvents = 'none';
+
+    // Permitir cliques apenas nos botões
+    buttons.forEach(button => {
+        button.style.pointerEvents = 'auto';
+    });
+}
+
+// Função para gerar posições aleatórias para as bolhas
+function generateRandomBubbles() {
+    bubblePositions = [];
+    const bubbleCount = Math.floor(Math.random() * 8) + 5; // 5-12 bolhas
+
+    for (let i = 0; i < bubbleCount; i++) {
+        bubblePositions.push({
+            x: Math.random() * (radius * 2 - 20) + (centerX - radius + 10),
+            y: Math.random() * (radius * 2 - 20) + (centerY - radius + 10),
+            size: Math.random() * 8 + 4,
+            speed: Math.random() * 2 + 1,
+            offset: Math.random() * Math.PI * 2
+        });
+    }
+}
+
+// Função para desenhar bolhas na água
+function drawBubbles() {
+    if (waterLevel > 0 && bubblePositions.length > 0) {
+        const waterHeight = (waterLevel / maxWaterLevel) * (radius * 2);
+        const waterY = centerY + radius - waterHeight;
+
+        bubblePositions.forEach((bubble, index) => {
+            // Só desenha bolhas que estão abaixo da superfície da água
+            if (bubble.y > waterY) {
+                const time = Date.now() / 1000;
+                const wave = Math.sin(time * bubble.speed + bubble.offset) * 2;
+
+                ctx.beginPath();
+                ctx.arc(bubble.x + wave, bubble.y, bubble.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${0.3 + Math.sin(time + index) * 0.2})`;
+                ctx.fill();
+
+                // Bolha de reflexo
+                ctx.beginPath();
+                ctx.arc(bubble.x + wave - bubble.size * 0.3, bubble.y - bubble.size * 0.3, bubble.size * 0.4, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.fill();
+            }
+        });
+    }
+}
+
 // Função para mostrar/esconder o botão esvaziar
 function updateEmptyButtonVisibility() {
     if (waterLevel > 0 && !isEmptying) {
@@ -245,6 +339,10 @@ function drawBallOrPants() {
 
         ctx.fillStyle = gradient;
         ctx.fill();
+
+        // Desenhar bolhas na água
+        drawBubbles();
+
         ctx.restore();
     }
 
@@ -273,6 +371,8 @@ canvas.addEventListener('click', e => {
         if (d <= radius) {
             targetWaterLevel = maxWaterLevel;
             isEmptying = false;
+            // Gerar novas bolhas aleatórias quando encher
+            generateRandomBubbles();
         }
     } else {
         ctx.beginPath();
@@ -280,6 +380,8 @@ canvas.addEventListener('click', e => {
         if (ctx.isPointInPath(x, y)) {
             targetWaterLevel = maxWaterLevel;
             isEmptying = false;
+            // Gerar novas bolhas aleatórias quando encher
+            generateRandomBubbles();
         }
     }
 });
@@ -294,6 +396,10 @@ ballBtn.onclick = () => {
     info.textContent = `0.0 L / ${capacities.ball} L`;
     isEmptying = false;
     updateEmptyButtonVisibility();
+    // Gerar novas bolhas quando mudar de forma
+    generateRandomBubbles();
+    // Reposicionar botões aleatoriamente
+    positionButtonsRandomly();
 };
 
 // Botão das calças
@@ -306,12 +412,20 @@ pantsBtn.onclick = () => {
     info.textContent = `0.0 L / ${capacities.pants} L`;
     isEmptying = false;
     updateEmptyButtonVisibility();
+    // Gerar novas bolhas quando mudar de forma
+    generateRandomBubbles();
+    // Reposicionar botões aleatoriamente
+    positionButtonsRandomly();
 };
 
 // Botão esvaziar
 emptyBtn.onclick = () => {
     targetWaterLevel = 0;
     bubblePopAnimation(emptyBtn);
+    // Limpar bolhas quando esvaziar
+    bubblePositions = [];
+    // Reposicionar botões aleatoriamente
+    positionButtonsRandomly();
 };
 
 function animate() {
@@ -322,5 +436,10 @@ function animate() {
 // ========== INICIALIZAÇÃO ==========
 document.addEventListener('DOMContentLoaded', function() {
     createMarineBackground();
+    generateRandomBubbles(); // Gerar bolhas iniciais
+    positionButtonsRandomly(); // Posicionar botões aleatoriamente
     animate();
 });
+
+// Reposicionar botões quando a janela é redimensionada
+window.addEventListener('resize', positionButtonsRandomly);

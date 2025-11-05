@@ -578,3 +578,39 @@ canvas {
 .starfish {
     animation: star-rotate 8s linear infinite;
 }
+
+/* Estilos para os botões flutuantes */
+.bubble-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 100;
+}
+
+.bubble-button {
+    position: absolute;
+    pointer-events: auto;
+    transform: translate(-50%, -50%);
+    transition: all 0.5s ease-in-out;
+    z-index: 101;
+}
+
+.bubble-button:hover {
+    transform: translate(-50%, -50%) scale(1.2);
+    z-index: 102;
+}
+
+/* Garantir que o conteúdo principal fique acima do fundo mas abaixo dos botões */
+.content {
+    position: relative;
+    z-index: 10;
+}
+
+/* Ajustar o canvas para não interferir com os botões */
+.canvas-container {
+    position: relative;
+    z-index: 1;
+}
