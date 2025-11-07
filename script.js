@@ -151,7 +151,7 @@ class Jellyfish extends SeaCreature {
         this.speed = speed * 0.5; // Medusas são mais lentas
     }
 
-    // Desenho da medusa (Estava correto, pois não usava super.draw())
+    // Desenho da medusa (COM TENTÁCULOS ESPALHADOS)
     draw() {
         ctx.save();
         ctx.translate(this.x, this.y);
@@ -164,20 +164,31 @@ class Jellyfish extends SeaCreature {
         ctx.beginPath();
         ctx.arc(0, 0, this.size, 0, Math.PI, true); // Metade superior
         //ctx.bezierCurveTo(this.size, this.size * 1.5, -this.size, this.size * 1.5, -this.size, 0); // Curva inferior
-        //ctx.closePath();
+        ctx.closePath();
         ctx.fill();
         ctx.stroke();
 
-        // Tentáculos
+        // Tentáculos (MODIFICADO)
         for (let i = 0; i < 5; i++) {
-            ctx.beginPath();
-            ctx.moveTo(-15 + i*7.5, 0);
+            // 1. RE-ADICIONADO: Começa um novo caminho para CADA tentáculo
+            ctx.beginPath(); 
+            
+            // 2. CALCULA O X INICIAL: Mapeia i (0 a 4) para um X entre -this.size*0.8 e +this.size*0.8
+            // Isto espalha os 5 tentáculos
+            const startX = (i / 4) * (this.size * 1.6) - (this.size * 0.8);
+            
+            // 3. MOVE PARA A POSIÇÃO INICIAL: Usa o X calculado
+            ctx.moveTo(startX, this.size * 0.5); 
+            
             const time = Date.now() / 200 + i * 0.5;
+            
+            // 4. DESENHA A CURVA: O ponto final X também usa o startX
             ctx.bezierCurveTo(
-                this.size * 0.3 * Math.sin(time), this.size * (1 + i * 0.2),
-                -this.size * 0.3 * Math.cos(time), this.size * (1.5 + i * 0.2),
-                -15 + i*7.5, this.size * (2)
+                startX + (this.size * 0.3 * Math.sin(time)), this.size * (1 + i * 0.2),
+                startX + (-this.size * 0.3 * Math.cos(time)), this.size * (1.5 + i * 0.2),
+                startX, this.size * (2 + i * 0.2) // O X final é o mesmo do X inicial
             );
+            
             ctx.strokeStyle = this.color;
             ctx.lineWidth = 1;
             ctx.stroke();
@@ -211,7 +222,7 @@ class Ray extends SeaCreature {
     draw() {
         super.draw(); // Chama save, translate, scale
         
-        const flap = Math.sin(Date.now() / 150 + this.oscillation) * this.size * 0.1; // Batida das asas
+        const flap = Math.sin(Date.now() / 150 + this.oscillation) * this.size * 0.3; // Batida das asas
         
         ctx.fillStyle = this.color;
         ctx.strokeStyle = `rgba(0,0,0,0.2)`;
@@ -219,18 +230,18 @@ class Ray extends SeaCreature {
 
         ctx.beginPath();
         // Corpo central
-        ctx.ellipse(0, 0, this.size , this.size * 0.8, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, 0, this.size * 1.2, this.size * 0.8, 0, 0, Math.PI * 2);
         
         // Asas
         ctx.moveTo(0, 0);
-        ctx.quadraticCurveTo(this.size * 0, -this.size * 1.5 - flap, this.size * 1.8, 0); // Asa direita
+        ctx.quadraticCurveTo(this.size * 0.5, -this.size * 1.5 - flap, this.size * 1.8, 0); // Asa direita
         ctx.moveTo(0, 0);
-        ctx.quadraticCurveTo(this.size * 0, this.size * 1.5 + flap, this.size * 1.8, 0); // Asa direita
+        ctx.quadraticCurveTo(this.size * 0.5, this.size * 1.5 + flap, this.size * 1.8, 0); // Asa direita
         
         ctx.moveTo(0, 0);
-        ctx.quadraticCurveTo(-this.size * 0, -this.size * 1.5 - flap, -this.size * 1.8, 0); // Asa esquerda
+        ctx.quadraticCurveTo(-this.size * 0.5, -this.size * 1.5 - flap, -this.size * 1.8, 0); // Asa esquerda
         ctx.moveTo(0, 0);
-        ctx.quadraticCurveTo(-this.size * 0, this.size * 1.5 + flap, -this.size * 1.8, 0); // Asa esquerda
+        ctx.quadraticCurveTo(-this.size * 0.5, this.size * 1.5 + flap, -this.size * 1.8, 0); // Asa esquerda
 
         // Cauda
         ctx.moveTo(-this.size * 0.8, 0);
