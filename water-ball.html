@@ -3,71 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Animação Marinha no Fundo</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            overflow: hidden; /* Evita barras de rolagem se o canvas for 100% */
-            background-color: #000; /* Fundo escuro para a área fora do canvas */
-            position: relative; /* Para que os elementos filhos possam ser posicionados absolutamente */
-            height: 100vh; /* Ocupa a altura total da viewport */
-            display: flex; /* Para centralizar o conteúdo */
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start; /* Alinha o conteúdo ao topo */
-        }
-
-        /* O canvas agora cobre toda a tela e está no fundo */
-        canvas {
-            position: fixed; /* Fixa o canvas no fundo */
-            top: 0;
-            left: 0;
-            width: 100vw; /* Ocupa 100% da largura da viewport */
-            height: 100vh; /* Ocupa 100% da altura da viewport */
-            display: block;
-            border: none; /* Remove a borda do canvas */
-            background-color: transparent; /* O fundo do canvas será desenhado no JS */
-        }
-        
-        /* O bloco de notas precisa ser posicionado acima do canvas */
-        .notes {
-            position: relative; /* Ou absolute, dependendo do layout desejado */
-            text-align: center;
-            margin: 20px auto;
-            max-width: 600px;
-            padding: 15px;
-            background-color: rgba(255, 255, 255, 0.85); /* Fundo semi-transparente */
-            border-radius: 8px;
-            font-family: Arial, sans-serif;
-            z-index: 1; /* Garante que fique acima do canvas */
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2); /* Sombra para destacar */
-        }
-
-        .notes h3 {
-            color: #333;
-            margin-top: 0;
-            margin-bottom: 10px;
-        }
-
-        .notes p {
-            color: #666;
-            margin: 5px 0;
-            font-size: 14px;
-        }
-
-        .capacity-info {
-            font-weight: bold;
-            color: #0066cc;
-        }
-    </style>
+    <title>Animação de Consumo de Água (Canvas)</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    
 
-    <canvas id="ballCanvas"></canvas> 
-    
+    <canvas id="ballCanvas"></canvas>
+
     <script src="script.js"></script>
 
 </body>
