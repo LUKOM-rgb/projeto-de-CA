@@ -5,7 +5,7 @@ let ctx;
 // --- CONSTANTES DE SISTEMA E FÍSICA (Matéria: Aceleração/Física) ---
 const GRAVITY = 0.1; // Aceleração constante em Y
 const DROP_RADIUS = 3;
-const EMISSION_RATE = 4; // Gotas a emitir por clique
+const EMISSION_RATE = 10; // Gotas a emitir por clique
 const TOTAL_FILL_STEPS = 500; // Número de gotas/steps para encher totalmente
 
 // --- CONFIGURAÇÕES DE UI/DESENHO ---
