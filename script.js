@@ -1,12 +1,10 @@
-// script.js (Versão Final com Mascote de Gradiente e Bolha de Sabão Animada)
 
-// MUDANÇA: Declaração de canvas e ctx com 'let' no escopo global, sem atribuição imediata.
 let canvas;
 let ctx;
 
 // --- CONSTANTES DE SISTEMA E FÍSICA (Matéria: Aceleração/Física) ---
 const GRAVITY = 0.1; // Aceleração constante em Y
-const DROP_RADIUS = 3;
+const DROP_RADIUS = 3; // Tamanho da gota
 const EMISSION_RATE = 4; // Gotas a emitir por clique
 const TOTAL_FILL_STEPS = 500; // Número de gotas/steps para encher totalmente
 
@@ -37,11 +35,11 @@ const totalCapacity = {
     calcas: 10000,
     tshirt: 5000,
     phone: 15000,
-    cup: 2000 // NOVA CAPACIDADE: Copo/Chávena
+    cup: 2000
 };
 let currentShape = 'bola';
 
-// --- ARRAYS DE OBJETOS EM ANIMAÇÃO NO CANVAS (Matéria: Classes/Partículas) ---
+// --- ARRAYS DE OBJETOS EM ANIMAÇÃO NO CANVAS ---
 const waterDrops = [];
 const seaCreatures = [];
 const numFish = 10;
@@ -49,7 +47,7 @@ const numJellyfish = 5;
 const numRay = 2;
 
 
-// --- CLASSE GOTA (Matéria: Classes, Movimento Acelerado/Projetil) ---
+// --- CLASSE GOTA  ---
 class Gota {
     constructor(x, y) {
         this.x = x;
@@ -81,7 +79,7 @@ class Gota {
 }
 
 
-// --- CLASSE BASE E SUBCLASSES DE ANIMAÇÃO DE FUNDO (100% Canvas) ---
+// --- CLASSE BASE E SUBCLASSES DE ANIMAÇÃO DE FUNDO ---
 class SeaCreature {
     constructor(x, y, size, speed, color, shape, direction) {
         this.x = x;
@@ -175,9 +173,9 @@ class Ray extends SeaCreature {
         this.speed = speed * 0.7;
     }
 
-    // Desenho da arraia
+    // Raia
     draw() {
-        super.draw(); // Chama save, translate, scale
+        super.draw();
 
         const flap = Math.sin(Date.now() / 150 + this.oscillation) * this.size * 0.3; // Batida das asas
 
@@ -186,10 +184,10 @@ class Ray extends SeaCreature {
         ctx.lineWidth = 1;
 
         ctx.beginPath();
-        // Corpo central
+        // Corpo
         ctx.ellipse(0, 0, this.size * 1.2, this.size * 0.8, 0, 0, Math.PI * 2);
 
-        // Asas (usa quadraticCurveTo para a forma aerodinâmica)
+        // Barbatana
         ctx.moveTo(0, 0);
         ctx.quadraticCurveTo(this.size * 0.5, -this.size * 1.5 - flap, this.size * 1.8, 0);
         ctx.moveTo(0, 0);
@@ -207,7 +205,7 @@ class Ray extends SeaCreature {
         ctx.fill();
         ctx.stroke();
 
-        // Olho (desenha 2 olhos)
+        // Olhos
         ctx.beginPath();
         ctx.arc(this.size * 0.5, -this.size * 0.2, this.size * 0.1, 0, Math.PI * 2);
         ctx.arc(this.size * 0.2, -this.size * 0.2, this.size * 0.1, 0, Math.PI * 2);
@@ -223,7 +221,7 @@ class Ray extends SeaCreature {
     }
 }
 
-// NOVO: Peixe Mascote (Fixo, Grande, Interativo com Gradiente)
+// Peixe Mascote
 class MascotFish {
     constructor(x, y, size, direction) {
         this.x = x;
@@ -242,15 +240,13 @@ class MascotFish {
             ctx.scale(-1, 1);
         }
 
-        // --- CÓDIGO DE DESENHO DO PEIXE COM GRADIENTE ---
-
-        // 1. Cria o Gradiente (Horizontal, para simular luz e profundidade)
+        // Gradiente pro peixe
         const gradient = ctx.createLinearGradient(-this.size, 0, this.size, 0);
         gradient.addColorStop(0, '#FFD700'); // Amarelo Dourado (Luz)
         gradient.addColorStop(0.5, '#FF8C00'); // Laranja Escuro (Centro)
         gradient.addColorStop(1, '#B8860B'); // Marrom Dourado (Sombra)
 
-        // 2. Desenho do Corpo principal (Elipse)
+        // Corpo
         ctx.beginPath();
         ctx.ellipse(0, 0, this.size, this.size * 0.6, 0, 0, Math.PI * 2);
 
@@ -261,7 +257,7 @@ class MascotFish {
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        // 3. Cauda (precisa de ser redesenhada para preencher com o gradiente)
+        // Cauda
         ctx.beginPath();
         ctx.moveTo(-this.size, 0);
         ctx.lineTo(-this.size * 1.5, -this.size * 0.5);
@@ -271,18 +267,17 @@ class MascotFish {
         ctx.fill();
         ctx.stroke();
 
-        // 4. Olho
+        // Olho
         ctx.beginPath();
         ctx.arc(this.size * 0.6, -this.size * 0.1, this.size * 0.1, 0, Math.PI * 2);
         ctx.fillStyle = 'black';
         ctx.fill();
-        // -----------------------------------------------------------------
+
 
         ctx.restore();
     }
 
-    update() {
-        // Fixo
+    update() { // Assim fica fixo
     }
 }
 
@@ -309,7 +304,7 @@ function initSeaCreatures() {
     }
 }
 
-// --- FUNÇÕES DE LAYOUT/REDIMENSIONAMENTO ---
+// Layout
 
 function resizeCanvas() {
     canvas.width = window.innerWidth;
@@ -318,7 +313,7 @@ function resizeCanvas() {
     centerX = canvas.width / 2;
     centerY = (canvas.height - SHAPE_OFFSET_Y) / 2 + SHAPE_OFFSET_Y;
 
-    // MUDANÇA: Ajusta o posicionamento dos botões para 5 opções
+//Butões
     const numButtons = 5;
     const totalButtonsWidth = BUTTON_DIAMETER * numButtons + BUTTON_MARGIN * (numButtons - 1);
     const startX = centerX - totalButtonsWidth / 2 + BUTTON_RADIUS;
@@ -343,27 +338,26 @@ function resizeCanvas() {
         y: UI_Y_POSITION + BUTTON_RADIUS,
         r: BUTTON_RADIUS
     };
-    // NOVO BOTÃO: Copo/Chávena (quinta posição)
     cupButtonRect = {
         x: startX + (BUTTON_DIAMETER + BUTTON_MARGIN) * 4,
         y: UI_Y_POSITION + BUTTON_RADIUS,
         r: BUTTON_RADIUS
     };
 
-    // NOVO: Inicializa o peixe mascote no canto inferior esquerdo
-    const mascotSize = SHAPE_RADIUS * 0.8; // Grande!
+    // Posição da mascote
+    const mascotSize = SHAPE_RADIUS * 0.8;
     mascotFish = new MascotFish(
-        mascotSize * 2, // 2x o tamanho para garantir espaço na borda
+        mascotSize * 2,
         canvas.height - mascotSize * 1.5,
         mascotSize,
-        1 // Virado para a direita (para o centro da tela)
+        1 // Fica virado para a direita
     );
 
     waterDrops.length = 0;
     initSeaCreatures();
 }
 
-// FUNÇÃO DE DESENHO DE CALÇAS (Estilo Ícone em V - FINAL)
+// Calças
 function drawCalcas() {
     ctx.save();
     const R = SHAPE_RADIUS;
@@ -376,7 +370,6 @@ function drawCalcas() {
     const legOuterWidth = R * 0.9;
     const legInnerWidth = R * 0.4;
 
-    // 1. Desenhar a forma principal (V invertido)
     ctx.beginPath();
 
     // Cintura
@@ -396,7 +389,7 @@ function drawCalcas() {
 
     ctx.closePath();
 
-    // Preenchimento e Contorno (Corpo da Calça)
+    // Preenchimento e Contorno
     ctx.strokeStyle = 'white';
     ctx.lineWidth = 4;
     ctx.stroke();
@@ -404,7 +397,7 @@ function drawCalcas() {
     ctx.restore();
 }
 
-// MUDANÇA: Nova função para desenhar a T-shirt
+// Tshirt
 function drawTshirt() {
     ctx.save();
     const R = SHAPE_RADIUS;
@@ -435,71 +428,61 @@ function drawTshirt() {
     ctx.lineTo(C.x - R * 0.9, armpitY); // Axila
 
     // Ombro esquerdo e manga
-    ctx.lineTo(C.x - R * 1.1 - R * 0.3, sleeveY); // Ponta da manga (adaptado para o centro)
-    ctx.lineTo(C.x - R * 1.1, neckTopY); // Ombr
+    ctx.lineTo(C.x - R * 1.1 - R * 0.3, sleeveY);
+    ctx.lineTo(C.x - R * 1.1, neckTopY);
 
     ctx.closePath();
 
-    // Preenchimento e Contorno
-    ctx.strokeStyle = 'white'; // Contorno
-    ctx.lineWidth = 2;
+    // Contorno
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 4;
     ctx.stroke();
 
     ctx.restore();
 }
 
-// FUNÇÃO MODIFICADA E CORRIGIDA: Desenha uma Chávena de Café
+// copo
 function drawCup() {
     ctx.save();
     const R = SHAPE_RADIUS;
     const C = { x: centerX, y: centerY };
 
-    // Dimensões relativas da chávena
+    // Dimensões relativas do copo
     const topY = C.y - R * 0.8;
     const bottomY = C.y + R * 1.0;
     const topWidth = R * 1.0;
     const bottomWidth = R * 0.8;
 
-    // --- 1. Corpo da Chávena (CORRIGIDO) ---
+    // Corpo
     ctx.beginPath();
-    ctx.moveTo(C.x - topWidth / 2.5, topY); // Ponto de partida ajustado
+    ctx.moveTo(C.x - topWidth / 2.5, topY);
 
-    // O seu Path para o corpo:
     ctx.lineTo(C.x + topWidth / 1.5, topY);
     ctx.lineTo(C.x + bottomWidth / 1.19, bottomY);
     ctx.lineTo(C.x - bottomWidth / 2.5, bottomY);
-
-    // LINHA CRÍTICA: Fecha o Path e liga o último ponto ao primeiro.
     ctx.closePath();
 
-    // Desenha SÓ O CORPO (Stroke 1)
+    // Contorno corpo
     ctx.strokeStyle = 'white';
     ctx.lineWidth = 4;
     ctx.stroke();
 
-    // --- 2. Pega como Path fechado (Anel) ---
+    // Pega
     const handleCenterX = C.x + topWidth / 2 + R * 0.2;
     const handleCenterY = C.y;
     const handleOuterRadius = R * 0.4;
     const handleInnerRadius = R * 0.3;
 
-    ctx.beginPath(); // NOVO PATH para a pega!
+    ctx.beginPath();
 
-    // Move para o ponto superior da pega (lado de fora)
     ctx.moveTo(handleCenterX, handleCenterY - handleOuterRadius);
-
-    // Contorno Exterior (Arco de 270 a 90 graus)
     ctx.arc(handleCenterX, handleCenterY, handleOuterRadius, -Math.PI / 2, Math.PI / 2);
-
-    // Ligação para o Contorno Interior
     ctx.lineTo(handleCenterX, handleCenterY + handleInnerRadius);
-
-    // Contorno Interior (Arco de 90 a 270 graus, ao contrário)
     ctx.arc(handleCenterX, handleCenterY, handleInnerRadius, Math.PI / 2, -Math.PI / 2, true);
 
-    ctx.closePath(); // Fecha o anel da pega
+    ctx.closePath();
 
-    // Desenha SÓ A PEGA (Stroke 2)
+    // Contorno Pega
     ctx.strokeStyle = 'white';
     ctx.lineWidth = 4;
     ctx.stroke();
@@ -507,7 +490,7 @@ function drawCup() {
     ctx.restore();
 }
 
-// NOVA FUNÇÃO: Desenhar o Telemóvel (forma retangular com bordas arredondadas)
+// Telemóvel
 function drawPhone() {
     ctx.save();
     const R = SHAPE_RADIUS;
@@ -519,9 +502,7 @@ function drawPhone() {
     const x = C.x - width / 2;
     const y = C.y - height / 2;
 
-    // 1. Desenhar a forma principal (Retângulo arredondado)
     ctx.beginPath();
-    // Usa o conceito de Path e linha para criar a forma
     ctx.moveTo(x + borderRadius, y);
     ctx.lineTo(x + width - borderRadius, y);
     ctx.arcTo(x + width, y, x + width, y + borderRadius, borderRadius);
@@ -533,12 +514,12 @@ function drawPhone() {
     ctx.arcTo(x, y, x + borderRadius, y, borderRadius);
     ctx.closePath();
 
-    // Preenchimento e Contorno (Corpo do Telemóvel)
+    // Contorno
     ctx.strokeStyle = 'white';
-    ctx.lineWidth = 6;
+    ctx.lineWidth = 4;
     ctx.stroke();
 
-    // Detalhe de topo (câmara/speaker)
+    // Detalhe da camara
     ctx.beginPath();
     ctx.arc(C.x, y + R*0.3, R*0.05, 0, Math.PI * 2);
     ctx.fillStyle = 'black';
@@ -554,14 +535,14 @@ function drawPhone() {
 }
 
 
-// Padrão de bola simples (mantido)
+// Bola detalhes
 function drawBolaPattern() {
     ctx.save();
     ctx.translate(centerX, centerY);
 
     const radius = SHAPE_RADIUS;
-    const numPentagons = 6;
-    const pentagonRadius = radius * 0.3;
+    const numPentagons = 3;
+    const pentagonRadius = radius * 0.4;
     const rotationSpeed = Date.now() / 5000;
 
     ctx.rotate(rotationSpeed);
@@ -584,8 +565,8 @@ function drawBolaPattern() {
         ctx.closePath();
 
         ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-        ctx.strokeStyle = 'white';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.lineWidth = 4;
         ctx.fill();
         ctx.stroke();
     }
@@ -607,34 +588,29 @@ function drawBolaPattern() {
 }
 
 
-function drawWaterLevel() {
-    // --- MUDANÇA: CALCULA A ALTURA MÁXIMA E O PONTO DE PARTIDA DO FUNDO DA FORMA
+function drawWaterLevel() {// Calcúla a altura máxima e define o ponto de partida no fundo da forma
     let shapeMaxHeight = maxWaterHeight;
     let shapeBottomY = centerY + SHAPE_RADIUS; // Ponto de referência mais baixo para a maioria das formas
     const R = SHAPE_RADIUS;
 
     if (currentShape === 'phone') {
-        // CORREÇÃO TELEMÓVEL: Ajusta o ponto de partida para o fundo da forma
         shapeMaxHeight = R * 2.5;
         shapeBottomY = centerY + R * 2.5 / 2;
     } else if (currentShape === 'cup') {
-        // AJUSTE: O copo começa no ponto mais baixo
-        shapeMaxHeight = R * 1.8; // Altura aproximada do trapézio (1.8R)
-        shapeBottomY = centerY + R * 1.0; // Ponto mais baixo da forma do copo
+        shapeMaxHeight = R * 1.8;
+        shapeBottomY = centerY + R * 1.0;
     }
-    // --- FIM DA MUDANÇA DE CÁLCULO
 
     const waterHeight = (fillCounter / TOTAL_FILL_STEPS) * shapeMaxHeight; // Usa a nova altura máxima específica
     const waterY = shapeBottomY - waterHeight; // Usa o novo ponto de partida base específico
 
     ctx.save();
 
-    // 1. Recorte da Forma (Matéria: Paths, Clip)
     ctx.beginPath();
     if (currentShape === 'bola') {
         ctx.arc(centerX, centerY, SHAPE_RADIUS, 0, Math.PI * 2);
     } else if (currentShape === 'calcas') {
-        // CORREÇÃO CALÇAS: Usa um PATH simplificado para garantir o clipping
+        // Clipping calças
         const C = { x: centerX, y: centerY };
         const waistY = C.y - R * 1.0;
         const bottomY = C.y + R * 0.8;
@@ -647,7 +623,7 @@ function drawWaterLevel() {
         ctx.lineTo(C.x - R * 1.1, bottomY + R * 0.5);
         ctx.closePath();
     } else if (currentShape === 'tshirt') {
-        // Clipping para a T-shirt
+        // Clipping t-shirt
         const C = { x: centerX, y: centerY };
         const neckTopY = C.y - R * 1.0;
         const shoulderOutX = C.x + R * 1.1;
@@ -669,7 +645,7 @@ function drawWaterLevel() {
         ctx.arc(C.x, neckTopY, R * 0.25, Math.PI, 0);
         ctx.closePath();
     } else if (currentShape === 'phone') {
-        // Clipping para o Telemóvel
+        // Clipping telemóvel
         const C = { x: centerX, y: centerY };
         const width = R * 1.5;
         const height = R * 2.5;
@@ -688,7 +664,7 @@ function drawWaterLevel() {
         ctx.arcTo(x, y, x + borderRadius, y, borderRadius);
         ctx.closePath();
     } else if (currentShape === 'cup') {
-        // NOVO CLIPPING: Copo/Chávena (Usa o mesmo Path complexo que está no drawCup())
+        // Clipping Copo
         const C = { x: centerX, y: centerY };
         const topY = C.y - R * 0.8;
         const bottomY = C.y + R * 1.0;
@@ -701,23 +677,19 @@ function drawWaterLevel() {
         ctx.lineTo(C.x - bottomWidth / 2.5, bottomY);
         ctx.closePath();
     }
-    ctx.clip(); // Aplica o recorte
+    ctx.clip();
 
-    // 2. Desenho do Corpo da Água (Preenchimento)
-    // Ajustado para ser maior, cobrindo qualquer forma
+
     ctx.beginPath();
-    // A água é sempre desenhada a partir do ponto mais baixo (shapeBottomY) até waterY
     ctx.rect(centerX - SHAPE_RADIUS * 2, waterY, SHAPE_RADIUS * 4, shapeBottomY - waterY);
-
     const gradient = ctx.createLinearGradient(0, centerY - SHAPE_RADIUS, 0, centerY + SHAPE_RADIUS);
     gradient.addColorStop(0, 'rgba(0, 150, 255, 0.6)');
     gradient.addColorStop(1, 'rgba(0, 100, 255, 0.8)');
     ctx.fillStyle = gradient;
     ctx.fill();
 
-    // 3. Onda da Água (Animação feita no Canvas)
+    // Onda da Água
     ctx.beginPath();
-    // A onda deve cobrir a largura da forma atual, ou uma largura fixa segura
     const waveWidth = SHAPE_RADIUS * 2;
     ctx.moveTo(centerX - waveWidth / 2, waterY);
     for (let x = centerX - waveWidth / 2; x <= centerX + waveWidth / 2; x += 5) {
@@ -745,7 +717,7 @@ function drawInfoText() {
     ctx.textAlign = 'center';
     ctx.fillText(text, centerX, centerY - SHAPE_RADIUS - 50);
 
-    ctx.font = '16px Arial';
+    ctx.font = '18px Arial';
 
     let subtext = 'Clique na forma para a encher!';
     if (fillCounter >= TOTAL_FILL_STEPS) {
@@ -760,7 +732,7 @@ function drawInfoText() {
     ctx.restore();
 }
 
-// NOVA FUNÇÃO: Desenha a bolha de fala com estilo bolha de sabão
+// Bolha fala mascote
 function drawSpeechBubble() {
     if (!isMascotHovered || !mascotFish) return;
 
@@ -770,7 +742,7 @@ function drawSpeechBubble() {
     const padding = 30;
     const arrowSize = 1;
 
-    // NOVO: Cálculo de oscilação baseado no tempo
+    // Ondas a mexer
     const time = Date.now() / 400;
     const floatY = Math.sin(time) * 10; // Flutuação vertical
     const scalePulse = Math.sin(time * 0.5) * 0.01 + 1; // Pulsação de escala
@@ -787,21 +759,19 @@ function drawSpeechBubble() {
     const boxHeight = lines.length * lineHeight + padding * 2;
 
     const boxX = fish.x + fish.size * 2;
-    const boxY = fish.y - boxHeight - arrowSize + floatY; // APLICA FLUTUAÇÃO Y
+    const boxY = fish.y - boxHeight - arrowSize + floatY; // flutuação Y
 
     // Move para o centro da caixa para aplicar a escala
     const boxCenterX = boxX + boxWidth / 2;
     const boxCenterY = boxY + boxHeight / 2;
 
-    // APLICA ESCALA E TRANSLAÇÃO para animação
+    // animação
     ctx.translate(boxCenterX, boxCenterY);
     ctx.scale(scalePulse, scalePulse);
     ctx.translate(-boxCenterX, -boxCenterY);
 
 
-    // --- Estilo Bolha de Sabão ---
-
-    // 1. Gradiente Radial para Brilho
+    // Gradiente bolha fala
     const bubbleGradient = ctx.createRadialGradient(
         boxX + boxWidth * 0.3,
         boxY + boxHeight * 0.3,
@@ -813,10 +783,10 @@ function drawSpeechBubble() {
     bubbleGradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
     bubbleGradient.addColorStop(1, 'rgba(150, 200, 255, 0.4)');
 
-    // Desenha a bolha retangular (corpo)
+    // Bolha
     ctx.fillStyle = bubbleGradient;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.lineWidth = 5;
 
     ctx.beginPath();
     const borderRadius = 60;
@@ -824,10 +794,7 @@ function drawSpeechBubble() {
     ctx.fill();
     ctx.stroke();
 
-    // Desenha a seta (apontando para o peixe)
-
-
-    // 2. Desenha o texto (Cor preta)
+    // Texto
     ctx.fillStyle = 'black';
     lines.forEach((line, index) => {
         ctx.fillText(line.trim(), boxX + padding, boxY + padding + index * lineHeight);
@@ -837,7 +804,7 @@ function drawSpeechBubble() {
 }
 
 
-// --- FUNÇÃO DE DESENHO DO BOTÃO BOLHA (100% Canvas com Transparência) ---
+// Botões
 
 function drawBubbleButton(cx, cy, r, text, isActive) {
     ctx.save();
@@ -911,7 +878,6 @@ function drawButtons() {
         'Telemóvel', currentShape === 'phone'
     );
 
-    // NOVO BOTÃO: Copo/Chávena
     drawBubbleButton(
         cupButtonRect.x, cupButtonRect.y, cupButtonRect.r,
         'Copo', currentShape === 'cup'
@@ -920,9 +886,9 @@ function drawButtons() {
     ctx.restore();
 }
 
-// --- FUNÇÃO PRINCIPAL DE DESENHO (LOOP DE ANIMAÇÃO) ---
+// Fundo animado por trás
 function draw() {
-    // 1. Limpa o canvas com um gradiente de fundo marinho
+    // Limpa o canvas e adiciona gradiente
     ctx.save();
     const gradientBackground = ctx.createLinearGradient(0, 0, 0, canvas.height);
     gradientBackground.addColorStop(0, `hsl(200, 80%, 20%)`);
@@ -932,13 +898,13 @@ function draw() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.restore();
 
-    // 2. Desenha e atualiza os animais marinhos (Animação de Fundo)
+    // Desenha os animais
     seaCreatures.forEach(creature => {
         creature.update();
         creature.draw(ctx);
     });
 
-    // 3. Colisão, Atualização e Desenho das Gotas (Particle System)
+    // Atualização e desenho das gotas
     for (let i = waterDrops.length - 1; i >= 0; i--) {
         const drop = waterDrops[i];
 
@@ -946,7 +912,7 @@ function draw() {
         let shapeMaxHeight = maxWaterHeight;
         let shapeBottomY = centerY + R;
 
-        // CÁLCULO DINÂMICO DA LINHA DE COLISÃO
+        // cálculo para a colisao
         if (currentShape === 'phone') {
             shapeMaxHeight = R * 2.5;
             shapeBottomY = centerY + R * 2.5 / 2;
@@ -960,13 +926,12 @@ function draw() {
 
 
         if (drop.y + drop.r >= currentWaterY && fillCounter < TOTAL_FILL_STEPS) {
-            // Verifica se a gota colidiu DENTRO da forma preenchível
-            // Para isso, precisamos de um PATH temporário para testar isPointInPath
+            // Verifica se a gota colidiu dentro da forma
+            // Para isso, precisamos de um PATH temporário para testar
             ctx.beginPath();
             if (currentShape === 'bola') {
                 ctx.arc(centerX, centerY, SHAPE_RADIUS, 0, Math.PI * 2);
             } else if (currentShape === 'calcas') {
-                // CORREÇÃO CALÇAS: Usa um PATH simplificado para colisão
                 const C = { x: centerX, y: centerY };
                 const waistY = C.y - R * 1.0;
                 const bottomY = C.y + R * 0.8;
@@ -999,7 +964,6 @@ function draw() {
                 ctx.arc(C.x, neckTopY, R * 0.25, Math.PI, 0);
                 ctx.closePath();
             } else if (currentShape === 'phone') {
-                // Colisão para o Telemóvel
                 const C = { x: centerX, y: centerY };
                 const width = R * 1.5;
                 const height = R * 2.5;
@@ -1017,7 +981,7 @@ function draw() {
                 ctx.lineTo(x, y + borderRadius);
                 ctx.arcTo(x, y, x + borderRadius, y, borderRadius);
                 ctx.closePath();
-            } else if (currentShape === 'cup') { // NOVA COLISÃO: Copo/Chávena
+            } else if (currentShape === 'cup') {
                 const C = { x: centerX, y: centerY };
                 const topY = C.y - R * 0.8;
                 const bottomY = C.y + R * 1.0;
@@ -1031,7 +995,7 @@ function draw() {
                 ctx.closePath();
             }
 
-            if (ctx.isPointInPath(drop.x, drop.y)) { // Testar se a gota está dentro do caminho da forma
+            if (ctx.isPointInPath(drop.x, drop.y)) { // Testa se a gota está dentro do caminho da forma
                 drop.alive = false;
                 fillCounter++;
             }
@@ -1045,14 +1009,12 @@ function draw() {
 
     drawWaterLevel();
 
-    // 4. Desenha a FORMA PRINCIPAL
     ctx.save();
     if (currentShape === 'bola') {
-        // DESENHO DA BOLA SIMPLES (Círculo)
         ctx.beginPath();
         ctx.arc(centerX, centerY, SHAPE_RADIUS, 0, Math.PI * 2);
         ctx.strokeStyle = 'white';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 4;
         ctx.stroke();
 
         drawBolaPattern();
@@ -1062,51 +1024,43 @@ function draw() {
     } else if (currentShape === 'tshirt') {
         drawTshirt();
     } else if (currentShape === 'phone') {
-        // Desenha o Telemóvel
         drawPhone();
     } else if (currentShape === 'cup') {
-        // Desenha o Copo/Chávena
         drawCup();
     }
     ctx.restore();
 
-    // NOVO: Desenha o peixe mascote
+    // Mascote
     if (mascotFish) {
         mascotFish.draw();
-        drawSpeechBubble(); // Desenha a bolha se estiver em hover
+        drawSpeechBubble(); // Se o rato estiver por cima a bolha aparece
     }
 
-    // 5. Desenha a UI (Botões e Texto) - 100% Canvas
+    // Botões e texto
     drawButtons();
     drawInfoText();
 
-    // O ciclo de animação mantém-se com requestAnimationFrame(render)
 }
 
-// --- FUNÇÕES DE INTERAÇÃO (Colisão Círculo-Ponto) ---
 
 function selectShape(shape) {
-    currentShape = shape;
-    // MUDANÇA SOLICITADA: O telemóvel e as outras formas começam vazias
+    currentShape = shape;   // As formas começam vazias
     fillCounter = 0;
     waterDrops.length = 0;
 }
 
 function isClickInCircle(x, y, circle) {
     const distance = Math.sqrt(Math.pow(x - circle.x, 2) + Math.pow(y - circle.y, 2));
-    // Deteção de colisão Círculo-Ponto
     return distance <= circle.r;
 }
 
-function isClickInShape(x, y) {
-    // A colisão para formas complexas é feita recriando o path e usando isPointInPath
+function isClickInShape(x, y) {// A colisão para formas complexas é feita recriando o path e usando isPointInPath
     ctx.beginPath();
     const R = SHAPE_RADIUS;
 
     if (currentShape === 'bola') {
         ctx.arc(centerX, centerY, SHAPE_RADIUS, 0, Math.PI * 2);
     } else if (currentShape === 'calcas') {
-        // CORREÇÃO CALÇAS: Usa o PATH simplificado para detetar o clique
         const C = { x: centerX, y: centerY };
         const waistY = C.y - R * 1.0;
         const bottomY = C.y + R * 0.8;
@@ -1139,7 +1093,6 @@ function isClickInShape(x, y) {
         ctx.arc(C.x, neckTopY, R * 0.25, Math.PI, 0);
         ctx.closePath();
     } else if (currentShape === 'phone') {
-        // Colisão para o Telemóvel
         const C = { x: centerX, y: centerY };
         const width = R * 1.5;
         const height = R * 2.5;
@@ -1157,7 +1110,7 @@ function isClickInShape(x, y) {
         ctx.lineTo(x, y + borderRadius);
         ctx.arcTo(x, y, x + borderRadius, y, borderRadius);
         ctx.closePath();
-    } else if (currentShape === 'cup') { // NOVO CLIQUE: Copo/Chávena
+    } else if (currentShape === 'cup') {
         const C = { x: centerX, y: centerY };
         const topY = C.y - R * 0.8;
         const bottomY = C.y + R * 1.0;
@@ -1173,7 +1126,7 @@ function isClickInShape(x, y) {
     return ctx.isPointInPath(x, y);
 }
 
-// --- FUNÇÃO DE INICIALIZAÇÃO E EVENTOS ---
+// Inicialização e eventos
 
 function init() {
     canvas = document.getElementById('bolaCanvas');
@@ -1183,7 +1136,7 @@ function init() {
     }
     ctx = canvas.getContext('2d');
 
-    // NOVO EVENTO: Deteção de Hover (mouse move)
+    // Detetar Houver
     canvas.addEventListener('mousemove', function(event) {
         if (!mascotFish) return;
 
@@ -1196,7 +1149,7 @@ function init() {
             Math.pow(mouseX - mascotFish.x, 2) + Math.pow(mouseY - mascotFish.y, 2)
         );
 
-        // Atualiza o estado de hover se o rato estiver dentro do hitbox
+        // Atualiza o estado de hover se o rato estiver dentro da hitbox
         isMascotHovered = distance <= mascotFish.hitboxR;
     });
 
@@ -1214,7 +1167,7 @@ function init() {
             selectShape('tshirt');
         } else if (isClickInCircle(x, y, phoneButtonRect)) {
             selectShape('phone');
-        } else if (isClickInCircle(x, y, cupButtonRect)) { // NOVO CLIQUE DE BOTÃO: Copo/Chávena
+        } else if (isClickInCircle(x, y, cupButtonRect)) {
             selectShape('cup');
         }
         else if (isClickInShape(x, y) && fillCounter < TOTAL_FILL_STEPS) {
@@ -1224,7 +1177,7 @@ function init() {
 
             for (let i = 0; i < EMISSION_RATE; i++) {
                 if (fillCounter < TOTAL_FILL_STEPS) {
-                    waterDrops.push(new Gota(x, y)); // Emissão da gota no ponto de clique
+                    waterDrops.push(new Gota(x, y)); // Emissão da gota no lick
                 }
             }
         }
@@ -1235,7 +1188,7 @@ function init() {
     animate();
 }
 
-// --- Loop de Animação ---
+// Loop de animação
 function animate() {
     draw();
     requestAnimationFrame(animate);
