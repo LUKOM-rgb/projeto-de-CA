@@ -1,4 +1,3 @@
-
 let canvas;
 let ctx;
 
@@ -19,7 +18,6 @@ const SHAPE_RADIUS = 80;
 // Variáveis de controle de estado
 let centerX, centerY;
 let bolaButtonRect = {};
-let calcasButtonRect = {};
 let tshirtButtonRect = {};
 let phoneButtonRect = {};
 let cupButtonRect = {};
@@ -32,12 +30,16 @@ let totalLitersConsumed = 0; // Contador de litros global (NÃO RESETA)
 const maxWaterHeight = SHAPE_RADIUS * 2;
 const totalCapacity = {
     bola: 3000,
-    calcas: 10000,
     tshirt: 5000,
     phone: 15000,
     cup: 2000
 };
 let currentShape = 'bola';
+
+// --- NOVO: Variáveis para o Botão Esvaziar (no Canvas) ---
+let emptyButtonRect = {};
+let emptyButtonOpacity = 0.0;
+let emptyButtonScale = 0.5;
 
 // --- ARRAYS DE OBJETOS EM ANIMAÇÃO NO CANVAS ---
 const waterDrops = [];
@@ -47,7 +49,7 @@ const numJellyfish = 5;
 const numRay = 2;
 
 
-// --- CLASSE GOTA  ---
+// --- CLASSE GOTA ---
 class Gota {
     constructor(x, y) {
         this.x = x;
@@ -108,12 +110,12 @@ class SeaCreature {
             this.x = -this.size * 3;
             this.y = Math.random() * canvas.height;
             this.baseY = this.y;
-            this.speed = Math.random() * 0.5 + 0.5;
+            this.speed = Math.random() * 1 + 0.5;
         } else if (this.direction === -1 && this.x < -this.size * 3) {
             this.x = canvas.width + this.size * 3;
             this.y = Math.random() * canvas.height;
             this.baseY = this.y;
-            this.speed = Math.random() * 0.5 + 0.5;
+            this.speed = Math.random() * 1 + 0.5;
         }
     }
 }
@@ -314,7 +316,7 @@ function resizeCanvas() {
     centerY = (canvas.height - SHAPE_OFFSET_Y) / 2 + SHAPE_OFFSET_Y;
 
 //Butões
-    const numButtons = 5;
+    const numButtons = 4;
     const totalButtonsWidth = BUTTON_DIAMETER * numButtons + BUTTON_MARGIN * (numButtons - 1);
     const startX = centerX - totalButtonsWidth / 2 + BUTTON_RADIUS;
 
@@ -323,25 +325,27 @@ function resizeCanvas() {
         y: UI_Y_POSITION + BUTTON_RADIUS,
         r: BUTTON_RADIUS
     };
-    calcasButtonRect = {
-        x: startX + BUTTON_DIAMETER + BUTTON_MARGIN,
-        y: UI_Y_POSITION + BUTTON_RADIUS,
-        r: BUTTON_RADIUS
-    };
     tshirtButtonRect = {
-        x: startX + (BUTTON_DIAMETER + BUTTON_MARGIN) * 2,
+        x: startX + (BUTTON_DIAMETER + BUTTON_MARGIN),
         y: UI_Y_POSITION + BUTTON_RADIUS,
         r: BUTTON_RADIUS
     };
     phoneButtonRect = {
-        x: startX + (BUTTON_DIAMETER + BUTTON_MARGIN) * 3,
+        x: startX + (BUTTON_DIAMETER + BUTTON_MARGIN) * 2,
         y: UI_Y_POSITION + BUTTON_RADIUS,
         r: BUTTON_RADIUS
     };
     cupButtonRect = {
-        x: startX + (BUTTON_DIAMETER + BUTTON_MARGIN) * 4,
+        x: startX + (BUTTON_DIAMETER + BUTTON_MARGIN) * 3,
         y: UI_Y_POSITION + BUTTON_RADIUS,
         r: BUTTON_RADIUS
+    };
+
+    // NOVO: Posição do botão Esvaziar (canto inferior direito)
+    emptyButtonRect = {
+        x: canvas.width - BUTTON_RADIUS * 0.7 - BUTTON_MARGIN * 70,
+        y: canvas.height - BUTTON_RADIUS * 0.7 - BUTTON_MARGIN * 20,
+        r: BUTTON_RADIUS * 1
     };
 
     // Posição da mascote
@@ -356,47 +360,6 @@ function resizeCanvas() {
     waterDrops.length = 0;
     initSeaCreatures();
 }
-
-// Calças
-function drawCalcas() {
-    ctx.save();
-    const R = SHAPE_RADIUS;
-    const C = { x: centerX, y: centerY };
-
-    // Dimensões relativas
-    const waistY = C.y - R * 1.0;
-    const bottomY = C.y + R * 0.8;
-    const waistWidth = R * 1.8;
-    const legOuterWidth = R * 0.9;
-    const legInnerWidth = R * 0.4;
-
-    ctx.beginPath();
-
-    // Cintura
-    ctx.moveTo(C.x - waistWidth / 2, waistY);
-    ctx.lineTo(C.x + waistWidth / 2, waistY);
-
-    // Perna direita
-    ctx.lineTo(C.x + legOuterWidth, bottomY);
-    ctx.lineTo(C.x + legInnerWidth, bottomY);
-
-    // Virilha (Ponta do V)
-    ctx.lineTo(C.x, C.y + R * 0.2);
-
-    // Perna esquerda
-    ctx.lineTo(C.x - legInnerWidth, bottomY);
-    ctx.lineTo(C.x - legOuterWidth, bottomY);
-
-    ctx.closePath();
-
-    // Preenchimento e Contorno
-    ctx.strokeStyle = 'white';
-    ctx.lineWidth = 4;
-    ctx.stroke();
-
-    ctx.restore();
-}
-
 // Tshirt
 function drawTshirt() {
     ctx.save();
@@ -609,19 +572,6 @@ function drawWaterLevel() {// Calcúla a altura máxima e define o ponto de part
     ctx.beginPath();
     if (currentShape === 'bola') {
         ctx.arc(centerX, centerY, SHAPE_RADIUS, 0, Math.PI * 2);
-    } else if (currentShape === 'calcas') {
-        // Clipping calças
-        const C = { x: centerX, y: centerY };
-        const waistY = C.y - R * 1.0;
-        const bottomY = C.y + R * 0.8;
-        const waistWidth = R * 1.8;
-
-        ctx.moveTo(C.x - waistWidth / 2, waistY);
-        ctx.lineTo(C.x + waistWidth / 2, waistY);
-        ctx.lineTo(C.x + R * 1.1, bottomY + R * 0.5);
-        ctx.lineTo(C.x, C.y + R * 0.2);
-        ctx.lineTo(C.x - R * 1.1, bottomY + R * 0.5);
-        ctx.closePath();
     } else if (currentShape === 'tshirt') {
         // Clipping t-shirt
         const C = { x: centerX, y: centerY };
@@ -864,11 +814,6 @@ function drawButtons() {
     );
 
     drawBubbleButton(
-        calcasButtonRect.x, calcasButtonRect.y, calcasButtonRect.r,
-        'Calças', currentShape === 'calcas'
-    );
-
-    drawBubbleButton(
         tshirtButtonRect.x, tshirtButtonRect.y, tshirtButtonRect.r,
         'T-shirt', currentShape === 'tshirt'
     );
@@ -886,7 +831,90 @@ function drawButtons() {
     ctx.restore();
 }
 
-// Fundo animado por trás
+// --- NOVO: Desenho e Animação do Botão Esvaziar ---
+
+// Desenha o botão "Esvaziar"
+function drawEmptyButton() {
+    // Só desenha se a opacidade for maior que 0
+    if (emptyButtonOpacity <= 0) return;
+
+    ctx.save();
+
+    const cx = emptyButtonRect.x;
+    const cy = emptyButtonRect.y;
+    const r = emptyButtonRect.r;
+
+    // Aplica a opacidade e a transformação de escala (animação)
+    ctx.globalAlpha = emptyButtonOpacity;
+    ctx.translate(cx, cy);
+    ctx.scale(emptyButtonScale, emptyButtonScale);
+    ctx.translate(-cx, -cy);
+
+    // Efeito de Pulso (similar aos botões de cima)
+    const pulse = Math.sin(Date.now() / 400) * 0.05 + 1;
+
+    ctx.translate(cx, cy);
+    ctx.scale(pulse, pulse);
+    ctx.translate(-cx, -cy);
+
+    // Gradiente de Aviso (Vermelho/Laranja)
+    const bubbleGradient = ctx.createRadialGradient(
+        cx - r * 0.3, cy - r * 0.3, r * 0.1,
+        cx, cy, r
+    );
+
+    const colorStart = 'rgba(231, 76, 60, 0.7)'; // Vermelho Claro
+    const colorEnd = 'rgba(192, 57, 43, 0.4)';  // Vermelho Escuro
+
+    bubbleGradient.addColorStop(0, colorStart);
+    bubbleGradient.addColorStop(0.9, colorEnd);
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = bubbleGradient;
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgb(255, 150, 150)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Brilho
+    ctx.beginPath();
+    ctx.arc(cx - r * 0.3, cy - r * 0.4, r * 0.2, 0, Math.PI * 2);
+    ctx.globalAlpha = 0.4 * emptyButtonOpacity;
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.globalAlpha = emptyButtonOpacity;
+
+    // Texto
+    ctx.fillStyle = 'white';
+    ctx.shadowColor = 'rgba(0,0,0,0.4)';
+    ctx.shadowBlur = 2;
+    ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('ESVAZIAR', cx, cy);
+
+    ctx.restore();
+}
+
+// Lógica da animação de aparecer/desaparecer (transição)
+function updateEmptyButtonAnimation() {
+    const hasWater = fillCounter > 0;
+    const speed = 0.08; // Velocidade da transição
+
+    if (hasWater) {
+        // Aparecer: Aumenta opacidade e escala até 1.0
+        emptyButtonOpacity = Math.min(1.0, emptyButtonOpacity + speed);
+        emptyButtonScale = Math.min(1.0, emptyButtonScale + speed);
+    } else {
+        // Desaparecer: Diminui opacidade e escala até 0.0 / 0.5 (estado inicial invisível)
+        emptyButtonOpacity = Math.max(0.0, emptyButtonOpacity - speed);
+        emptyButtonScale = Math.max(0.5, emptyButtonScale - speed);
+    }
+}
+
+
 function draw() {
     // Limpa o canvas e adiciona gradiente
     ctx.save();
@@ -931,18 +959,6 @@ function draw() {
             ctx.beginPath();
             if (currentShape === 'bola') {
                 ctx.arc(centerX, centerY, SHAPE_RADIUS, 0, Math.PI * 2);
-            } else if (currentShape === 'calcas') {
-                const C = { x: centerX, y: centerY };
-                const waistY = C.y - R * 1.0;
-                const bottomY = C.y + R * 0.8;
-                const waistWidth = R * 1.8;
-
-                ctx.moveTo(C.x - waistWidth / 2, waistY);
-                ctx.lineTo(C.x + waistWidth / 2, waistY);
-                ctx.lineTo(C.x + R * 1.1, bottomY + R * 0.5);
-                ctx.lineTo(C.x, C.y + R * 0.2);
-                ctx.lineTo(C.x - R * 1.1, bottomY + R * 0.5);
-                ctx.closePath();
             } else if (currentShape === 'tshirt') {
                 const C = { x: centerX, y: centerY };
                 const neckTopY = C.y - R * 1.0;
@@ -1019,9 +1035,7 @@ function draw() {
 
         drawBolaPattern();
 
-    } else if (currentShape === 'calcas') {
-        drawCalcas();
-    } else if (currentShape === 'tshirt') {
+    }  else if (currentShape === 'tshirt') {
         drawTshirt();
     } else if (currentShape === 'phone') {
         drawPhone();
@@ -1039,6 +1053,9 @@ function draw() {
     // Botões e texto
     drawButtons();
     drawInfoText();
+
+    // NOVO: Desenha o botão "Esvaziar"
+    drawEmptyButton();
 
 }
 
@@ -1060,19 +1077,7 @@ function isClickInShape(x, y) {// A colisão para formas complexas é feita recr
 
     if (currentShape === 'bola') {
         ctx.arc(centerX, centerY, SHAPE_RADIUS, 0, Math.PI * 2);
-    } else if (currentShape === 'calcas') {
-        const C = { x: centerX, y: centerY };
-        const waistY = C.y - R * 1.0;
-        const bottomY = C.y + R * 0.8;
-        const waistWidth = R * 1.8;
-
-        ctx.moveTo(C.x - waistWidth / 2, waistY);
-        ctx.lineTo(C.x + waistWidth / 2, waistY);
-        ctx.lineTo(C.x + R * 1.1, bottomY + R * 0.5);
-        ctx.lineTo(C.x, C.y + R * 0.2);
-        ctx.lineTo(C.x - R * 1.1, bottomY + R * 0.5);
-        ctx.closePath();
-    } else if (currentShape === 'tshirt') {
+    }  else if (currentShape === 'tshirt') {
         const C = { x: centerX, y: centerY };
         const neckTopY = C.y - R * 1.0;
         const shoulderOutX = C.x + R * 1.1;
@@ -1161,15 +1166,22 @@ function init() {
 
         if (isClickInCircle(x, y, bolaButtonRect)) {
             selectShape('bola');
-        } else if (isClickInCircle(x, y, calcasButtonRect)) {
-            selectShape('calcas');
-        } else if (isClickInCircle(x, y, tshirtButtonRect)) {
+        }  else if (isClickInCircle(x, y, tshirtButtonRect)) {
             selectShape('tshirt');
         } else if (isClickInCircle(x, y, phoneButtonRect)) {
             selectShape('phone');
         } else if (isClickInCircle(x, y, cupButtonRect)) {
             selectShape('cup');
         }
+
+        // NOVO: Detetar clique no botão Esvaziar (se estiver visível/em transição)
+        else if (isClickInCircle(x, y, emptyButtonRect) && fillCounter > 0) {
+            // Esvaziar a forma e reiniciar contadores
+            fillCounter = 0;
+            waterDrops.length = 0;
+            return;
+        }
+
         else if (isClickInShape(x, y) && fillCounter < TOTAL_FILL_STEPS) {
             const maxCapacity = totalCapacity[currentShape];
             const litersPerStep = maxCapacity / TOTAL_FILL_STEPS;
@@ -1191,6 +1203,8 @@ function init() {
 // Loop de animação
 function animate() {
     draw();
+    // NOVO: Atualiza a animação de opacidade e escala em cada frame
+    updateEmptyButtonAnimation();
     requestAnimationFrame(animate);
 }
 
