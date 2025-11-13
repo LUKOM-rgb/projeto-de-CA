@@ -1,3 +1,5 @@
+// script.js (Versão Final com Mascote de Gradiente e Bolha de Sabão Animada)
+
 // MUDANÇA: Declaração de canvas e ctx com 'let' no escopo global, sem atribuição imediata.
 let canvas;
 let ctx;
@@ -5,34 +7,39 @@ let ctx;
 // --- CONSTANTES DE SISTEMA E FÍSICA (Matéria: Aceleração/Física) ---
 const GRAVITY = 0.1; // Aceleração constante em Y
 const DROP_RADIUS = 3;
-const EMISSION_RATE = 10; // Gotas a emitir por clique
+const EMISSION_RATE = 4; // Gotas a emitir por clique
 const TOTAL_FILL_STEPS = 500; // Número de gotas/steps para encher totalmente
 
 // --- CONFIGURAÇÕES DE UI/DESENHO ---
-const BUTTON_RADIUS = 40;
+const BUTTON_RADIUS = 45;
 const BUTTON_DIAMETER = BUTTON_RADIUS * 2;
 const BUTTON_MARGIN = 10;
-const UI_Y_POSITION = 15;
+const UI_Y_POSITION = 195;
 const SHAPE_OFFSET_Y = 100;
 const SHAPE_RADIUS = 80;
 
 // Variáveis de controle de estado
 let centerX, centerY;
-let ballButtonRect = {};
-let pantsButtonRect = {};
-// MUDANÇA: Novo botão para a T-shirt
+let bolaButtonRect = {};
+let calcasButtonRect = {};
 let tshirtButtonRect = {};
+let phoneButtonRect = {};
+let cupButtonRect = {};
+
+let mascotFish = null; // A instância do nosso peixe mascote
+let isMascotHovered = false; // Estado de hover
 
 let fillCounter = 0;
 let totalLitersConsumed = 0; // Contador de litros global (NÃO RESETA)
 const maxWaterHeight = SHAPE_RADIUS * 2;
 const totalCapacity = {
-    ball: 3000,
-    pants: 10000,
-    // MUDANÇA: Capacidade para a T-shirt
-    tshirt: 5000
+    bola: 3000,
+    calcas: 10000,
+    tshirt: 5000,
+    phone: 15000,
+    cup: 2000 // NOVA CAPACIDADE: Copo/Chávena
 };
-let currentShape = 'ball';
+let currentShape = 'bola';
 
 // --- ARRAYS DE OBJETOS EM ANIMAÇÃO NO CANVAS (Matéria: Classes/Partículas) ---
 const waterDrops = [];
@@ -168,7 +175,7 @@ class Ray extends SeaCreature {
         this.speed = speed * 0.7;
     }
 
-    // Desenho da arraia (CORRIGIDO)
+    // Desenho da arraia
     draw() {
         super.draw(); // Chama save, translate, scale
 
@@ -182,16 +189,16 @@ class Ray extends SeaCreature {
         // Corpo central
         ctx.ellipse(0, 0, this.size * 1.2, this.size * 0.8, 0, 0, Math.PI * 2);
 
-        // Asas
+        // Asas (usa quadraticCurveTo para a forma aerodinâmica)
         ctx.moveTo(0, 0);
-        ctx.quadraticCurveTo(this.size * 0.5, -this.size * 1.5 - flap, this.size * 1.8, 0); // Asa direita
+        ctx.quadraticCurveTo(this.size * 0.5, -this.size * 1.5 - flap, this.size * 1.8, 0);
         ctx.moveTo(0, 0);
-        ctx.quadraticCurveTo(this.size * 0.5, this.size * 1.5 + flap, this.size * 1.8, 0); // Asa direita
+        ctx.quadraticCurveTo(this.size * 0.5, this.size * 1.5 + flap, this.size * 1.8, 0);
 
         ctx.moveTo(0, 0);
-        ctx.quadraticCurveTo(-this.size * 0.5, -this.size * 1.5 - flap, -this.size * 1.8, 0); // Asa esquerda
+        ctx.quadraticCurveTo(-this.size * 0.5, -this.size * 1.5 - flap, -this.size * 1.8, 0);
         ctx.moveTo(0, 0);
-        ctx.quadraticCurveTo(-this.size * 0.5, this.size * 1.5 + flap, -this.size * 1.8, 0); // Asa esquerda
+        ctx.quadraticCurveTo(-this.size * 0.5, this.size * 1.5 + flap, -this.size * 1.8, 0);
 
         // Cauda
         ctx.moveTo(-this.size * 0.8, 0);
@@ -207,7 +214,7 @@ class Ray extends SeaCreature {
         ctx.fillStyle = 'black';
         ctx.fill();
 
-        ctx.restore(); // Restaura o save() do super.draw()
+        ctx.restore();
     }
 
     update() {
@@ -215,6 +222,70 @@ class Ray extends SeaCreature {
         this.y = this.baseY + Math.sin(this.oscillation + Date.now() / 600) * this.size * 0.2;
     }
 }
+
+// NOVO: Peixe Mascote (Fixo, Grande, Interativo com Gradiente)
+class MascotFish {
+    constructor(x, y, size, direction) {
+        this.x = x;
+        this.y = y;
+        this.size = size;
+        this.color = `hsl(30, 90%, 60%)`;
+        this.direction = direction || 1;
+        this.hitboxR = size * 1.5;
+        this.message = "Se custa encheres, imagina a produzir! Pensa no ambiente";
+    }
+
+    draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        if (this.direction === -1) {
+            ctx.scale(-1, 1);
+        }
+
+        // --- CÓDIGO DE DESENHO DO PEIXE COM GRADIENTE ---
+
+        // 1. Cria o Gradiente (Horizontal, para simular luz e profundidade)
+        const gradient = ctx.createLinearGradient(-this.size, 0, this.size, 0);
+        gradient.addColorStop(0, '#FFD700'); // Amarelo Dourado (Luz)
+        gradient.addColorStop(0.5, '#FF8C00'); // Laranja Escuro (Centro)
+        gradient.addColorStop(1, '#B8860B'); // Marrom Dourado (Sombra)
+
+        // 2. Desenho do Corpo principal (Elipse)
+        ctx.beginPath();
+        ctx.ellipse(0, 0, this.size, this.size * 0.6, 0, 0, Math.PI * 2);
+
+        ctx.fillStyle = gradient; // APLICA O GRADIENTE
+        ctx.fill();
+
+        ctx.strokeStyle = `rgba(0,0,0,0.3)`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // 3. Cauda (precisa de ser redesenhada para preencher com o gradiente)
+        ctx.beginPath();
+        ctx.moveTo(-this.size, 0);
+        ctx.lineTo(-this.size * 1.5, -this.size * 0.5);
+        ctx.lineTo(-this.size * 1.5, this.size * 0.5);
+        ctx.closePath();
+
+        ctx.fill();
+        ctx.stroke();
+
+        // 4. Olho
+        ctx.beginPath();
+        ctx.arc(this.size * 0.6, -this.size * 0.1, this.size * 0.1, 0, Math.PI * 2);
+        ctx.fillStyle = 'black';
+        ctx.fill();
+        // -----------------------------------------------------------------
+
+        ctx.restore();
+    }
+
+    update() {
+        // Fixo
+    }
+}
+
 
 function initSeaCreatures() {
     seaCreatures.length = 0;
@@ -247,16 +318,17 @@ function resizeCanvas() {
     centerX = canvas.width / 2;
     centerY = (canvas.height - SHAPE_OFFSET_Y) / 2 + SHAPE_OFFSET_Y;
 
-    // MUDANÇA: Ajusta o posicionamento dos botões para 3 opções
-    const totalButtonsWidth = BUTTON_DIAMETER * 3 + BUTTON_MARGIN * 2;
+    // MUDANÇA: Ajusta o posicionamento dos botões para 5 opções
+    const numButtons = 5;
+    const totalButtonsWidth = BUTTON_DIAMETER * numButtons + BUTTON_MARGIN * (numButtons - 1);
     const startX = centerX - totalButtonsWidth / 2 + BUTTON_RADIUS;
 
-    ballButtonRect = {
+    bolaButtonRect = {
         x: startX,
         y: UI_Y_POSITION + BUTTON_RADIUS,
         r: BUTTON_RADIUS
     };
-    pantsButtonRect = {
+    calcasButtonRect = {
         x: startX + BUTTON_DIAMETER + BUTTON_MARGIN,
         y: UI_Y_POSITION + BUTTON_RADIUS,
         r: BUTTON_RADIUS
@@ -266,13 +338,33 @@ function resizeCanvas() {
         y: UI_Y_POSITION + BUTTON_RADIUS,
         r: BUTTON_RADIUS
     };
+    phoneButtonRect = {
+        x: startX + (BUTTON_DIAMETER + BUTTON_MARGIN) * 3,
+        y: UI_Y_POSITION + BUTTON_RADIUS,
+        r: BUTTON_RADIUS
+    };
+    // NOVO BOTÃO: Copo/Chávena (quinta posição)
+    cupButtonRect = {
+        x: startX + (BUTTON_DIAMETER + BUTTON_MARGIN) * 4,
+        y: UI_Y_POSITION + BUTTON_RADIUS,
+        r: BUTTON_RADIUS
+    };
+
+    // NOVO: Inicializa o peixe mascote no canto inferior esquerdo
+    const mascotSize = SHAPE_RADIUS * 0.8; // Grande!
+    mascotFish = new MascotFish(
+        mascotSize * 2, // 2x o tamanho para garantir espaço na borda
+        canvas.height - mascotSize * 1.5,
+        mascotSize,
+        1 // Virado para a direita (para o centro da tela)
+    );
 
     waterDrops.length = 0;
     initSeaCreatures();
 }
 
 // FUNÇÃO DE DESENHO DE CALÇAS (Estilo Ícone em V - FINAL)
-function drawPants() {
+function drawCalcas() {
     ctx.save();
     const R = SHAPE_RADIUS;
     const C = { x: centerX, y: centerY };
@@ -305,8 +397,6 @@ function drawPants() {
     ctx.closePath();
 
     // Preenchimento e Contorno (Corpo da Calça)
-
-
     ctx.strokeStyle = 'white';
     ctx.lineWidth = 4;
     ctx.stroke();
@@ -321,7 +411,7 @@ function drawTshirt() {
     const C = { x: centerX, y: centerY };
 
     // Dimensões relativas da T-shirt
-    const neckTopY = C.y - R * 1;
+    const neckTopY = C.y - R * 1.0;
     const shoulderOutX = C.x + R * 1.1;
     const sleeveY = C.y - R * 0.3;
     const armpitY = C.y + R * 0.1;
@@ -329,7 +419,6 @@ function drawTshirt() {
     const bodyWidth = R * 1.8;
 
     ctx.beginPath();
-
 
     // Ombro direito e manga
     ctx.lineTo(shoulderOutX, neckTopY);
@@ -346,8 +435,8 @@ function drawTshirt() {
     ctx.lineTo(C.x - R * 0.9, armpitY); // Axila
 
     // Ombro esquerdo e manga
-    ctx.lineTo(shoulderOutX * -1 - R * 0.3 + C.x * 2, sleeveY); // Ponta da manga (adaptado para o centro)
-    ctx.lineTo(shoulderOutX + -170, neckTopY); // Ombro
+    ctx.lineTo(C.x - R * 1.1 - R * 0.3, sleeveY); // Ponta da manga (adaptado para o centro)
+    ctx.lineTo(C.x - R * 1.1, neckTopY); // Ombr
 
     ctx.closePath();
 
@@ -356,14 +445,117 @@ function drawTshirt() {
     ctx.lineWidth = 2;
     ctx.stroke();
 
+    ctx.restore();
+}
 
+// FUNÇÃO MODIFICADA E CORRIGIDA: Desenha uma Chávena de Café
+function drawCup() {
+    ctx.save();
+    const R = SHAPE_RADIUS;
+    const C = { x: centerX, y: centerY };
+
+    // Dimensões relativas da chávena
+    const topY = C.y - R * 0.8;
+    const bottomY = C.y + R * 1.0;
+    const topWidth = R * 1.0;
+    const bottomWidth = R * 0.8;
+
+    // --- 1. Corpo da Chávena (CORRIGIDO) ---
+    ctx.beginPath();
+    ctx.moveTo(C.x - topWidth / 2.5, topY); // Ponto de partida ajustado
+
+    // O seu Path para o corpo:
+    ctx.lineTo(C.x + topWidth / 1.5, topY);
+    ctx.lineTo(C.x + bottomWidth / 1.19, bottomY);
+    ctx.lineTo(C.x - bottomWidth / 2.5, bottomY);
+
+    // LINHA CRÍTICA: Fecha o Path e liga o último ponto ao primeiro.
+    ctx.closePath();
+
+    // Desenha SÓ O CORPO (Stroke 1)
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    // --- 2. Pega como Path fechado (Anel) ---
+    const handleCenterX = C.x + topWidth / 2 + R * 0.2;
+    const handleCenterY = C.y;
+    const handleOuterRadius = R * 0.4;
+    const handleInnerRadius = R * 0.3;
+
+    ctx.beginPath(); // NOVO PATH para a pega!
+
+    // Move para o ponto superior da pega (lado de fora)
+    ctx.moveTo(handleCenterX, handleCenterY - handleOuterRadius);
+
+    // Contorno Exterior (Arco de 270 a 90 graus)
+    ctx.arc(handleCenterX, handleCenterY, handleOuterRadius, -Math.PI / 2, Math.PI / 2);
+
+    // Ligação para o Contorno Interior
+    ctx.lineTo(handleCenterX, handleCenterY + handleInnerRadius);
+
+    // Contorno Interior (Arco de 90 a 270 graus, ao contrário)
+    ctx.arc(handleCenterX, handleCenterY, handleInnerRadius, Math.PI / 2, -Math.PI / 2, true);
+
+    ctx.closePath(); // Fecha o anel da pega
+
+    // Desenha SÓ A PEGA (Stroke 2)
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    ctx.restore();
+}
+
+// NOVA FUNÇÃO: Desenhar o Telemóvel (forma retangular com bordas arredondadas)
+function drawPhone() {
+    ctx.save();
+    const R = SHAPE_RADIUS;
+    const C = { x: centerX, y: centerY };
+
+    const width = R * 1.5;
+    const height = R * 2.5;
+    const borderRadius = R * 0.2;
+    const x = C.x - width / 2;
+    const y = C.y - height / 2;
+
+    // 1. Desenhar a forma principal (Retângulo arredondado)
+    ctx.beginPath();
+    // Usa o conceito de Path e linha para criar a forma
+    ctx.moveTo(x + borderRadius, y);
+    ctx.lineTo(x + width - borderRadius, y);
+    ctx.arcTo(x + width, y, x + width, y + borderRadius, borderRadius);
+    ctx.lineTo(x + width, y + height - borderRadius);
+    ctx.arcTo(x + width, y + height, x + width - borderRadius, y + height, borderRadius);
+    ctx.lineTo(x + borderRadius, y + height);
+    ctx.arcTo(x, y + height, x, y + height - borderRadius, borderRadius);
+    ctx.lineTo(x, y + borderRadius);
+    ctx.arcTo(x, y, x + borderRadius, y, borderRadius);
+    ctx.closePath();
+
+    // Preenchimento e Contorno (Corpo do Telemóvel)
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 6;
+    ctx.stroke();
+
+    // Detalhe de topo (câmara/speaker)
+    ctx.beginPath();
+    ctx.arc(C.x, y + R*0.3, R*0.05, 0, Math.PI * 2);
+    ctx.fillStyle = 'black';
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(C.x, y + R*2.2, R*0.10, 0, Math.PI * 2);
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    ctx.stroke();
 
     ctx.restore();
 }
 
 
 // Padrão de bola simples (mantido)
-function drawBallPattern() {
+function drawBolaPattern() {
     ctx.save();
     ctx.translate(centerX, centerY);
 
@@ -416,60 +608,106 @@ function drawBallPattern() {
 
 
 function drawWaterLevel() {
-    const waterHeight = (fillCounter / TOTAL_FILL_STEPS) * maxWaterHeight;
-    const waterY = centerY + SHAPE_RADIUS - waterHeight;
+    // --- MUDANÇA: CALCULA A ALTURA MÁXIMA E O PONTO DE PARTIDA DO FUNDO DA FORMA
+    let shapeMaxHeight = maxWaterHeight;
+    let shapeBottomY = centerY + SHAPE_RADIUS; // Ponto de referência mais baixo para a maioria das formas
+    const R = SHAPE_RADIUS;
+
+    if (currentShape === 'phone') {
+        // CORREÇÃO TELEMÓVEL: Ajusta o ponto de partida para o fundo da forma
+        shapeMaxHeight = R * 2.5;
+        shapeBottomY = centerY + R * 2.5 / 2;
+    } else if (currentShape === 'cup') {
+        // AJUSTE: O copo começa no ponto mais baixo
+        shapeMaxHeight = R * 1.8; // Altura aproximada do trapézio (1.8R)
+        shapeBottomY = centerY + R * 1.0; // Ponto mais baixo da forma do copo
+    }
+    // --- FIM DA MUDANÇA DE CÁLCULO
+
+    const waterHeight = (fillCounter / TOTAL_FILL_STEPS) * shapeMaxHeight; // Usa a nova altura máxima específica
+    const waterY = shapeBottomY - waterHeight; // Usa o novo ponto de partida base específico
 
     ctx.save();
 
     // 1. Recorte da Forma (Matéria: Paths, Clip)
     ctx.beginPath();
-    if (currentShape === 'ball') {
+    if (currentShape === 'bola') {
         ctx.arc(centerX, centerY, SHAPE_RADIUS, 0, Math.PI * 2);
-    } else if (currentShape === 'pants') {
-        // Usa o PATH da forma das calças para o clipping
-        const R = SHAPE_RADIUS;
+    } else if (currentShape === 'calcas') {
+        // CORREÇÃO CALÇAS: Usa um PATH simplificado para garantir o clipping
         const C = { x: centerX, y: centerY };
         const waistY = C.y - R * 1.0;
         const bottomY = C.y + R * 0.8;
         const waistWidth = R * 1.8;
-        const legOuterWidth = R * 0.9;
-        const legInnerWidth = R * 0.4;
 
         ctx.moveTo(C.x - waistWidth / 2, waistY);
         ctx.lineTo(C.x + waistWidth / 2, waistY);
-        ctx.lineTo(C.x + legOuterWidth, bottomY);
-        ctx.lineTo(C.x + legInnerWidth, bottomY);
+        ctx.lineTo(C.x + R * 1.1, bottomY + R * 0.5);
         ctx.lineTo(C.x, C.y + R * 0.2);
-        ctx.lineTo(C.x - legInnerWidth, bottomY);
-        ctx.lineTo(C.x - legOuterWidth, bottomY);
+        ctx.lineTo(C.x - R * 1.1, bottomY + R * 0.5);
         ctx.closePath();
-    } else if (currentShape === 'tshirt') { // MUDANÇA: Clipping para a T-shirt
-        const R = SHAPE_RADIUS;
+    } else if (currentShape === 'tshirt') {
+        // Clipping para a T-shirt
         const C = { x: centerX, y: centerY };
-        const neckTopY = C.y - R * 1.1;
+        const neckTopY = C.y - R * 1.0;
         const shoulderOutX = C.x + R * 1.1;
         const sleeveY = C.y - R * 0.3;
         const armpitY = C.y + R * 0.1;
         const bottomY = C.y + R * 1.0;
         const bodyWidth = R * 1.8;
 
-        ctx.arc(C.x, neckTopY + R * 0.2, R * 0.3, Math.PI, Math.PI * 2);
+        ctx.beginPath();
+
         ctx.lineTo(shoulderOutX, neckTopY);
         ctx.lineTo(shoulderOutX + R * 0.3, sleeveY);
         ctx.lineTo(C.x + R * 0.9, armpitY);
         ctx.lineTo(C.x + bodyWidth / 2, bottomY);
         ctx.lineTo(C.x - bodyWidth / 2, bottomY);
         ctx.lineTo(C.x - R * 0.9, armpitY);
-        ctx.lineTo(shoulderOutX * -1 - R * 0.3 + C.x * 2, sleeveY);
-        ctx.lineTo(C.x - shoulderOutX, neckTopY);
+        ctx.lineTo(C.x - R * 1.1 - R * 0.3, sleeveY);
+        ctx.lineTo(C.x - R * 1.1, neckTopY);
+        ctx.arc(C.x, neckTopY, R * 0.25, Math.PI, 0);
+        ctx.closePath();
+    } else if (currentShape === 'phone') {
+        // Clipping para o Telemóvel
+        const C = { x: centerX, y: centerY };
+        const width = R * 1.5;
+        const height = R * 2.5;
+        const borderRadius = R * 0.2;
+        const x = C.x - width / 2;
+        const y = C.y - height / 2;
+
+        ctx.moveTo(x + borderRadius, y);
+        ctx.lineTo(x + width - borderRadius, y);
+        ctx.arcTo(x + width, y, x + width, y + borderRadius, borderRadius);
+        ctx.lineTo(x + width, y + height - borderRadius);
+        ctx.arcTo(x + width, y + height, x + width - borderRadius, y + height, borderRadius);
+        ctx.lineTo(x + borderRadius, y + height);
+        ctx.arcTo(x, y + height, x, y + height - borderRadius, borderRadius);
+        ctx.lineTo(x, y + borderRadius);
+        ctx.arcTo(x, y, x + borderRadius, y, borderRadius);
+        ctx.closePath();
+    } else if (currentShape === 'cup') {
+        // NOVO CLIPPING: Copo/Chávena (Usa o mesmo Path complexo que está no drawCup())
+        const C = { x: centerX, y: centerY };
+        const topY = C.y - R * 0.8;
+        const bottomY = C.y + R * 1.0;
+        const topWidth = R * 1.0;
+        const bottomWidth = R * 0.8;
+
+        ctx.moveTo(C.x - topWidth / 2, topY);
+        ctx.lineTo(C.x + topWidth / 1.5, topY);
+        ctx.lineTo(C.x + bottomWidth / 1.19, bottomY);
+        ctx.lineTo(C.x - bottomWidth / 2.5, bottomY);
         ctx.closePath();
     }
-    ctx.clip();
+    ctx.clip(); // Aplica o recorte
 
     // 2. Desenho do Corpo da Água (Preenchimento)
     // Ajustado para ser maior, cobrindo qualquer forma
     ctx.beginPath();
-    ctx.rect(centerX - SHAPE_RADIUS * 2, waterY, SHAPE_RADIUS * 4, waterHeight);
+    // A água é sempre desenhada a partir do ponto mais baixo (shapeBottomY) até waterY
+    ctx.rect(centerX - SHAPE_RADIUS * 2, waterY, SHAPE_RADIUS * 4, shapeBottomY - waterY);
 
     const gradient = ctx.createLinearGradient(0, centerY - SHAPE_RADIUS, 0, centerY + SHAPE_RADIUS);
     gradient.addColorStop(0, 'rgba(0, 150, 255, 0.6)');
@@ -505,13 +743,95 @@ function drawInfoText() {
     ctx.shadowColor = 'black';
     ctx.shadowBlur = 6;
     ctx.textAlign = 'center';
-    ctx.fillText(text, centerX, centerY - SHAPE_RADIUS - 20);
+    ctx.fillText(text, centerX, centerY - SHAPE_RADIUS - 50);
 
     ctx.font = '16px Arial';
-    ctx.fillText('Clique na forma para a encher!', centerX, centerY + SHAPE_RADIUS + 40);
+
+    let subtext = 'Clique na forma para a encher!';
+    if (fillCounter >= TOTAL_FILL_STEPS) {
+         subtext = 'Capacidade Máxima Atingida!';
+    }
+
+    ctx.fillText(subtext, centerX, centerY + SHAPE_RADIUS + 60);
 
     const accumulatedText = `Total Acumulado (Todos os produtos): ${totalLitersConsumed.toFixed(0).toLocaleString()} L`;
-    ctx.fillText(accumulatedText, centerX, centerY + SHAPE_RADIUS + 65);
+    ctx.fillText(accumulatedText, centerX, centerY + SHAPE_RADIUS + 85);
+
+    ctx.restore();
+}
+
+// NOVA FUNÇÃO: Desenha a bolha de fala com estilo bolha de sabão
+function drawSpeechBubble() {
+    if (!isMascotHovered || !mascotFish) return;
+
+    ctx.save();
+    const fish = mascotFish;
+
+    const padding = 30;
+    const arrowSize = 1;
+
+    // NOVO: Cálculo de oscilação baseado no tempo
+    const time = Date.now() / 400;
+    const floatY = Math.sin(time) * 10; // Flutuação vertical
+    const scalePulse = Math.sin(time * 0.5) * 0.01 + 1; // Pulsação de escala
+
+    ctx.font = '20px Arial, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+
+    // Mede o texto para dimensionar a bolha
+    const lines = fish.message.match(/.{1,40}(\s|$)/g) || [fish.message];
+    const lineHeight = 20;
+    const textWidth = ctx.measureText(lines[0]).width;
+    const boxWidth = textWidth + padding * 2;
+    const boxHeight = lines.length * lineHeight + padding * 2;
+
+    const boxX = fish.x + fish.size * 2;
+    const boxY = fish.y - boxHeight - arrowSize + floatY; // APLICA FLUTUAÇÃO Y
+
+    // Move para o centro da caixa para aplicar a escala
+    const boxCenterX = boxX + boxWidth / 2;
+    const boxCenterY = boxY + boxHeight / 2;
+
+    // APLICA ESCALA E TRANSLAÇÃO para animação
+    ctx.translate(boxCenterX, boxCenterY);
+    ctx.scale(scalePulse, scalePulse);
+    ctx.translate(-boxCenterX, -boxCenterY);
+
+
+    // --- Estilo Bolha de Sabão ---
+
+    // 1. Gradiente Radial para Brilho
+    const bubbleGradient = ctx.createRadialGradient(
+        boxX + boxWidth * 0.3,
+        boxY + boxHeight * 0.3,
+        0,
+        boxX + boxWidth / 2,
+        boxY + boxHeight / 2,
+        boxWidth * 0.7
+    );
+    bubbleGradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+    bubbleGradient.addColorStop(1, 'rgba(150, 200, 255, 0.4)');
+
+    // Desenha a bolha retangular (corpo)
+    ctx.fillStyle = bubbleGradient;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.lineWidth = 1;
+
+    ctx.beginPath();
+    const borderRadius = 60;
+    ctx.roundRect(boxX, boxY, boxWidth, boxHeight, borderRadius);
+    ctx.fill();
+    ctx.stroke();
+
+    // Desenha a seta (apontando para o peixe)
+
+
+    // 2. Desenha o texto (Cor preta)
+    ctx.fillStyle = 'black';
+    lines.forEach((line, index) => {
+        ctx.fillText(line.trim(), boxX + padding, boxY + padding + index * lineHeight);
+    });
 
     ctx.restore();
 }
@@ -536,7 +856,7 @@ function drawBubbleButton(cx, cy, r, text, isActive) {
     );
 
     const colorStart = isActive ? 'rgba(150, 255, 150, 0.55)' : 'rgba(255, 255, 255, 0.55)';
-    const colorEnd = isActive ? 'rgba(0, 150, 0, 0.1)' : 'rgba(100, 100, 255, 0.1)';
+    const colorEnd = isActive ? 'rgba(0, 150, 0, 0.1)' : 'rgba(100, 100, 255, 0.3)';
 
     bubbleGradient.addColorStop(0, colorStart);
     bubbleGradient.addColorStop(0.9, colorEnd);
@@ -572,19 +892,29 @@ function drawButtons() {
     ctx.textBaseline = 'middle';
 
     drawBubbleButton(
-        ballButtonRect.x, ballButtonRect.y, ballButtonRect.r,
-        'Bola', currentShape === 'ball'
+        bolaButtonRect.x, bolaButtonRect.y, bolaButtonRect.r,
+        'Bola', currentShape === 'bola'
     );
 
     drawBubbleButton(
-        pantsButtonRect.x, pantsButtonRect.y, pantsButtonRect.r,
-        'Calças', currentShape === 'pants'
+        calcasButtonRect.x, calcasButtonRect.y, calcasButtonRect.r,
+        'Calças', currentShape === 'calcas'
     );
 
-    // MUDANÇA: Novo botão para a T-shirt
     drawBubbleButton(
         tshirtButtonRect.x, tshirtButtonRect.y, tshirtButtonRect.r,
         'T-shirt', currentShape === 'tshirt'
+    );
+
+    drawBubbleButton(
+        phoneButtonRect.x, phoneButtonRect.y, phoneButtonRect.r,
+        'Telemóvel', currentShape === 'phone'
+    );
+
+    // NOVO BOTÃO: Copo/Chávena
+    drawBubbleButton(
+        cupButtonRect.x, cupButtonRect.y, cupButtonRect.r,
+        'Copo', currentShape === 'cup'
     );
 
     ctx.restore();
@@ -612,50 +942,92 @@ function draw() {
     for (let i = waterDrops.length - 1; i >= 0; i--) {
         const drop = waterDrops[i];
 
-        const waterHeight = (fillCounter / TOTAL_FILL_STEPS) * maxWaterHeight;
-        const currentWaterY = centerY + SHAPE_RADIUS - waterHeight;
+        const R = SHAPE_RADIUS;
+        let shapeMaxHeight = maxWaterHeight;
+        let shapeBottomY = centerY + R;
+
+        // CÁLCULO DINÂMICO DA LINHA DE COLISÃO
+        if (currentShape === 'phone') {
+            shapeMaxHeight = R * 2.5;
+            shapeBottomY = centerY + R * 2.5 / 2;
+        } else if (currentShape === 'cup') {
+            shapeMaxHeight = R * 1.8;
+            shapeBottomY = centerY + R * 1.0;
+        }
+
+        const waterHeight = (fillCounter / TOTAL_FILL_STEPS) * shapeMaxHeight;
+        const currentWaterY = shapeBottomY - waterHeight;
+
 
         if (drop.y + drop.r >= currentWaterY && fillCounter < TOTAL_FILL_STEPS) {
             // Verifica se a gota colidiu DENTRO da forma preenchível
             // Para isso, precisamos de um PATH temporário para testar isPointInPath
             ctx.beginPath();
-            if (currentShape === 'ball') {
+            if (currentShape === 'bola') {
                 ctx.arc(centerX, centerY, SHAPE_RADIUS, 0, Math.PI * 2);
-            } else if (currentShape === 'pants') {
-                const R = SHAPE_RADIUS;
+            } else if (currentShape === 'calcas') {
+                // CORREÇÃO CALÇAS: Usa um PATH simplificado para colisão
                 const C = { x: centerX, y: centerY };
                 const waistY = C.y - R * 1.0;
                 const bottomY = C.y + R * 0.8;
                 const waistWidth = R * 1.8;
-                const legOuterWidth = R * 0.9;
-                const legInnerWidth = R * 0.4;
+
                 ctx.moveTo(C.x - waistWidth / 2, waistY);
                 ctx.lineTo(C.x + waistWidth / 2, waistY);
-                ctx.lineTo(C.x + legOuterWidth, bottomY);
-                ctx.lineTo(C.x + legInnerWidth, bottomY);
+                ctx.lineTo(C.x + R * 1.1, bottomY + R * 0.5);
                 ctx.lineTo(C.x, C.y + R * 0.2);
-                ctx.lineTo(C.x - legInnerWidth, bottomY);
-                ctx.lineTo(C.x - legOuterWidth, bottomY);
+                ctx.lineTo(C.x - R * 1.1, bottomY + R * 0.5);
                 ctx.closePath();
-            } else if (currentShape === 'tshirt') { // MUDANÇA: Colisão para T-shirt
-                const R = SHAPE_RADIUS;
+            } else if (currentShape === 'tshirt') {
                 const C = { x: centerX, y: centerY };
-                const neckTopY = C.y - R * 1.1;
+                const neckTopY = C.y - R * 1.0;
                 const shoulderOutX = C.x + R * 1.1;
                 const sleeveY = C.y - R * 0.3;
                 const armpitY = C.y + R * 0.1;
                 const bottomY = C.y + R * 1.0;
                 const bodyWidth = R * 1.8;
 
-                ctx.arc(C.x, neckTopY + R * 0.2, R * 0.3, Math.PI, Math.PI * 2);
+                ctx.beginPath();
                 ctx.lineTo(shoulderOutX, neckTopY);
                 ctx.lineTo(shoulderOutX + R * 0.3, sleeveY);
                 ctx.lineTo(C.x + R * 0.9, armpitY);
                 ctx.lineTo(C.x + bodyWidth / 2, bottomY);
                 ctx.lineTo(C.x - bodyWidth / 2, bottomY);
                 ctx.lineTo(C.x - R * 0.9, armpitY);
-                ctx.lineTo(shoulderOutX * -1 - R * 0.3 + C.x * 2, sleeveY);
-                ctx.lineTo(C.x - shoulderOutX, neckTopY);
+                ctx.lineTo(C.x - R * 1.1 - R * 0.3, sleeveY);
+                ctx.lineTo(C.x - R * 1.1, neckTopY);
+                ctx.arc(C.x, neckTopY, R * 0.25, Math.PI, 0);
+                ctx.closePath();
+            } else if (currentShape === 'phone') {
+                // Colisão para o Telemóvel
+                const C = { x: centerX, y: centerY };
+                const width = R * 1.5;
+                const height = R * 2.5;
+                const borderRadius = R * 0.2;
+                const x = C.x - width / 2;
+                const y = C.y - height / 2;
+
+                ctx.moveTo(x + borderRadius, y);
+                ctx.lineTo(x + width - borderRadius, y);
+                ctx.arcTo(x + width, y, x + width, y + borderRadius, borderRadius);
+                ctx.lineTo(x + width, y + height - borderRadius);
+                ctx.arcTo(x + width, y + height, x + width - borderRadius, y + height, borderRadius);
+                ctx.lineTo(x + borderRadius, y + height);
+                ctx.arcTo(x, y + height, x, y + height - borderRadius, borderRadius);
+                ctx.lineTo(x, y + borderRadius);
+                ctx.arcTo(x, y, x + borderRadius, y, borderRadius);
+                ctx.closePath();
+            } else if (currentShape === 'cup') { // NOVA COLISÃO: Copo/Chávena
+                const C = { x: centerX, y: centerY };
+                const topY = C.y - R * 0.8;
+                const bottomY = C.y + R * 1.0;
+                const topWidth = R * 1.0;
+                const bottomWidth = R * 0.8;
+
+                ctx.moveTo(C.x - topWidth / 2, topY);
+                ctx.lineTo(C.x + topWidth / 1.5, topY);
+                ctx.lineTo(C.x + bottomWidth / 1.19, bottomY);
+                ctx.lineTo(C.x - bottomWidth / 2.5, bottomY);
                 ctx.closePath();
             }
 
@@ -675,7 +1047,7 @@ function draw() {
 
     // 4. Desenha a FORMA PRINCIPAL
     ctx.save();
-    if (currentShape === 'ball') {
+    if (currentShape === 'bola') {
         // DESENHO DA BOLA SIMPLES (Círculo)
         ctx.beginPath();
         ctx.arc(centerX, centerY, SHAPE_RADIUS, 0, Math.PI * 2);
@@ -683,74 +1055,119 @@ function draw() {
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        drawBallPattern();
+        drawBolaPattern();
 
-    } else if (currentShape === 'pants') {
-        drawPants();
-    } else if (currentShape === 'tshirt') { // MUDANÇA: Desenha a T-shirt
+    } else if (currentShape === 'calcas') {
+        drawCalcas();
+    } else if (currentShape === 'tshirt') {
         drawTshirt();
+    } else if (currentShape === 'phone') {
+        // Desenha o Telemóvel
+        drawPhone();
+    } else if (currentShape === 'cup') {
+        // Desenha o Copo/Chávena
+        drawCup();
     }
     ctx.restore();
+
+    // NOVO: Desenha o peixe mascote
+    if (mascotFish) {
+        mascotFish.draw();
+        drawSpeechBubble(); // Desenha a bolha se estiver em hover
+    }
 
     // 5. Desenha a UI (Botões e Texto) - 100% Canvas
     drawButtons();
     drawInfoText();
+
+    // O ciclo de animação mantém-se com requestAnimationFrame(render)
 }
 
 // --- FUNÇÕES DE INTERAÇÃO (Colisão Círculo-Ponto) ---
 
 function selectShape(shape) {
     currentShape = shape;
+    // MUDANÇA SOLICITADA: O telemóvel e as outras formas começam vazias
     fillCounter = 0;
     waterDrops.length = 0;
 }
 
 function isClickInCircle(x, y, circle) {
     const distance = Math.sqrt(Math.pow(x - circle.x, 2) + Math.pow(y - circle.y, 2));
+    // Deteção de colisão Círculo-Ponto
     return distance <= circle.r;
 }
 
 function isClickInShape(x, y) {
+    // A colisão para formas complexas é feita recriando o path e usando isPointInPath
     ctx.beginPath();
-    if (currentShape === 'ball') {
+    const R = SHAPE_RADIUS;
+
+    if (currentShape === 'bola') {
         ctx.arc(centerX, centerY, SHAPE_RADIUS, 0, Math.PI * 2);
-    } else if (currentShape === 'pants') {
-        // Usa o PATH da nova forma para detetar o clique
-        const R = SHAPE_RADIUS;
+    } else if (currentShape === 'calcas') {
+        // CORREÇÃO CALÇAS: Usa o PATH simplificado para detetar o clique
         const C = { x: centerX, y: centerY };
         const waistY = C.y - R * 1.0;
         const bottomY = C.y + R * 0.8;
         const waistWidth = R * 1.8;
-        const legOuterWidth = R * 0.9;
-        const legInnerWidth = R * 0.4;
 
         ctx.moveTo(C.x - waistWidth / 2, waistY);
         ctx.lineTo(C.x + waistWidth / 2, waistY);
-        ctx.lineTo(C.x + legOuterWidth, bottomY);
-        ctx.lineTo(C.x + legInnerWidth, bottomY);
+        ctx.lineTo(C.x + R * 1.1, bottomY + R * 0.5);
         ctx.lineTo(C.x, C.y + R * 0.2);
-        ctx.lineTo(C.x - legInnerWidth, bottomY);
-        ctx.lineTo(C.x - legOuterWidth, bottomY);
+        ctx.lineTo(C.x - R * 1.1, bottomY + R * 0.5);
         ctx.closePath();
-    } else if (currentShape === 'tshirt') { // MUDANÇA: Detecção de clique para a T-shirt
-        const R = SHAPE_RADIUS;
+    } else if (currentShape === 'tshirt') {
         const C = { x: centerX, y: centerY };
-        const neckTopY = C.y - R * 1.1;
+        const neckTopY = C.y - R * 1.0;
         const shoulderOutX = C.x + R * 1.1;
         const sleeveY = C.y - R * 0.3;
         const armpitY = C.y + R * 0.1;
         const bottomY = C.y + R * 1.0;
         const bodyWidth = R * 1.8;
 
-        ctx.arc(C.x, neckTopY + R * 0.2, R * 0.3, Math.PI, Math.PI * 2);
+        ctx.beginPath();
         ctx.lineTo(shoulderOutX, neckTopY);
         ctx.lineTo(shoulderOutX + R * 0.3, sleeveY);
         ctx.lineTo(C.x + R * 0.9, armpitY);
         ctx.lineTo(C.x + bodyWidth / 2, bottomY);
         ctx.lineTo(C.x - bodyWidth / 2, bottomY);
         ctx.lineTo(C.x - R * 0.9, armpitY);
-        ctx.lineTo(shoulderOutX * -1 - R * 0.3 + C.x * 2, sleeveY);
-        ctx.lineTo(C.x - shoulderOutX, neckTopY);
+        ctx.lineTo(C.x - R * 1.1 - R * 0.3, sleeveY);
+        ctx.lineTo(C.x - R * 1.1, neckTopY);
+        ctx.arc(C.x, neckTopY, R * 0.25, Math.PI, 0);
+        ctx.closePath();
+    } else if (currentShape === 'phone') {
+        // Colisão para o Telemóvel
+        const C = { x: centerX, y: centerY };
+        const width = R * 1.5;
+        const height = R * 2.5;
+        const borderRadius = R * 0.2;
+        const x = C.x - width / 2;
+        const y = C.y - height / 2;
+
+        ctx.moveTo(x + borderRadius, y);
+        ctx.lineTo(x + width - borderRadius, y);
+        ctx.arcTo(x + width, y, x + width, y + borderRadius, borderRadius);
+        ctx.lineTo(x + width, y + height - borderRadius);
+        ctx.arcTo(x + width, y + height, x + width - borderRadius, y + height, borderRadius);
+        ctx.lineTo(x + borderRadius, y + height);
+        ctx.arcTo(x, y + height, x, y + height - borderRadius, borderRadius);
+        ctx.lineTo(x, y + borderRadius);
+        ctx.arcTo(x, y, x + borderRadius, y, borderRadius);
+        ctx.closePath();
+    } else if (currentShape === 'cup') { // NOVO CLIQUE: Copo/Chávena
+        const C = { x: centerX, y: centerY };
+        const topY = C.y - R * 0.8;
+        const bottomY = C.y + R * 1.0;
+        const topWidth = R * 1.0;
+        const bottomWidth = R * 0.8;
+
+        ctx.moveTo(C.x - topWidth / 2, topY);
+        ctx.lineTo(C.x + topWidth / 1.5, topY);
+        ctx.lineTo(C.x + bottomWidth / 1.19, bottomY);
+        ctx.lineTo(C.x - bottomWidth / 2.5, bottomY);
         ctx.closePath();
     }
     return ctx.isPointInPath(x, y);
@@ -759,24 +1176,46 @@ function isClickInShape(x, y) {
 // --- FUNÇÃO DE INICIALIZAÇÃO E EVENTOS ---
 
 function init() {
-    canvas = document.getElementById('ballCanvas');
+    canvas = document.getElementById('bolaCanvas');
     if (!canvas) {
         console.error("Canvas element not found!");
         return;
     }
     ctx = canvas.getContext('2d');
 
+    // NOVO EVENTO: Deteção de Hover (mouse move)
+    canvas.addEventListener('mousemove', function(event) {
+        if (!mascotFish) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = event.clientX - rect.left;
+        const mouseY = event.clientY - rect.top;
+
+        // Verifica a distância do rato ao centro da Mascote
+        const distance = Math.sqrt(
+            Math.pow(mouseX - mascotFish.x, 2) + Math.pow(mouseY - mascotFish.y, 2)
+        );
+
+        // Atualiza o estado de hover se o rato estiver dentro do hitbox
+        isMascotHovered = distance <= mascotFish.hitboxR;
+    });
+
+
     canvas.addEventListener('click', function(event) {
         const rect = canvas.getBoundingClientRect();
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
 
-        if (isClickInCircle(x, y, ballButtonRect)) {
-            selectShape('ball');
-        } else if (isClickInCircle(x, y, pantsButtonRect)) {
-            selectShape('pants');
-        } else if (isClickInCircle(x, y, tshirtButtonRect)) { // MUDANÇA: Clique no botão T-shirt
+        if (isClickInCircle(x, y, bolaButtonRect)) {
+            selectShape('bola');
+        } else if (isClickInCircle(x, y, calcasButtonRect)) {
+            selectShape('calcas');
+        } else if (isClickInCircle(x, y, tshirtButtonRect)) {
             selectShape('tshirt');
+        } else if (isClickInCircle(x, y, phoneButtonRect)) {
+            selectShape('phone');
+        } else if (isClickInCircle(x, y, cupButtonRect)) { // NOVO CLIQUE DE BOTÃO: Copo/Chávena
+            selectShape('cup');
         }
         else if (isClickInShape(x, y) && fillCounter < TOTAL_FILL_STEPS) {
             const maxCapacity = totalCapacity[currentShape];
@@ -785,7 +1224,7 @@ function init() {
 
             for (let i = 0; i < EMISSION_RATE; i++) {
                 if (fillCounter < TOTAL_FILL_STEPS) {
-                    waterDrops.push(new Gota(x, y));
+                    waterDrops.push(new Gota(x, y)); // Emissão da gota no ponto de clique
                 }
             }
         }

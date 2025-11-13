@@ -8,9 +8,24 @@
 </head>
 <body>
 
-    <canvas id="ballCanvas"></canvas>
+    <canvas id="bolaCanvas"></canvas>
+
+    <div id="splash-screen" class="visible">
+        <h1>ODS 12: Consumo Consciente de Água</h1>
+        <p>Clique em qualquer lugar para começar a simulação e medir o seu impacto.</p>
+        <div class="loading-bar"></div>
+    </div>
 
     <script src="script.js"></script>
 
+    <script>
+        document.addEventListener('click', function(event) {
+            const splash = document.getElementById('splash-screen');
+            if (splash && splash.classList.contains('visible')) {
+                splash.classList.remove('visible');
+                // Opcional: Remover o elemento completamente se quiser
+            }
+        });
+    </script>
 </body>
 </html>
