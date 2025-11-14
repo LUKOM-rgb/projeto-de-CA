@@ -1,5 +1,4 @@
 body {
-    /* Estilos essenciais de layout de tela cheia */
     font-family: Arial, sans-serif;
     color: white;
     margin: 0;
@@ -11,7 +10,6 @@ body {
 }
 
 canvas {
-    /* Configuração de tela inteira para o Canvas, que agora renderiza TUDO */
     position: fixed;
     top: 0;
     left: 0;
@@ -30,9 +28,7 @@ video {
 #webcamVideo {
     display: none !important;
 }
-/* --- ESTILOS ADICIONAIS PARA O SPLASH SCREEN --- */
 
-/* Estilos para o novo Canvas do Splash Screen (onde as bolhas animam) */
 #splashCanvas {
     position: absolute;
     top: 0;
@@ -42,45 +38,33 @@ video {
     z-index: 1;
 }
 
-/* Contêiner principal do Splash Screen (o que esconde o jogo) */
 #splash-screen {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-
-    /* Nota: O fundo é pintado pelo splashCanvas para o efeito de rasto */
     background-color: rgba(0, 0, 0, 0);
-
     color: white;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center;
-
-    /* Garante que fica por cima do canvas principal do jogo */
     z-index: 1000;
-
-    /* Transição suave para desaparecer */
     transition: opacity 1.5s ease-out;
 }
 
-/* Estado VISÍVEL do Splash */
 #splash-screen.visible {
     opacity: 1;
     pointer-events: auto;
 }
 
-/* Estado INVISÍVEL do Splash */
 #splash-screen:not(.visible) {
     opacity: 0;
-    /* Impede cliques no splash depois de desaparecer */
     pointer-events: none;
 }
 
-/* Garante que o texto fica visível acima do canvas de bolhas (z-index 1) */
 #splash-screen > * {
     z-index: 2;
     text-shadow: 0 0 10px rgba(0,0,0,0.8);

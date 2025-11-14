@@ -3,33 +3,33 @@ let ctx;
 let W;
 let H;
 
-// --- VARIÁVEIS ML5 E CÂMARA ---
+// Variáveis ML5  e camará
 let video;
 let handpose;
 let hands = [];
 let isCameraLoaded = false;
 let fingerHitbox = { x: 0, y: 0, r: 10, smoothing: 0.2 };
 
-// --- VARIÁVEIS DO RATO (REINTRODUZIDAS) ---
+// ratinho
 let mouseX = 0;
 let mouseY = 0;
 let isMouseDown = false;
 let isFillingActive = false;
 
 
-// --- NOVAS VARIÁVEIS PARA O SPLASH SCREEN ---
+// Intro variaveis
 let splashCanvas;
 let splashCtx;
 const bubbles = [];
 const NUM_BUBBLES = 50;
 
-// --- CONSTANTES DE SISTEMA E FÍSICA (Matéria: Aceleração/Física) ---
+// constantes e sistemas de física
 const GRAVITY = 0.1;
 const DROP_RADIUS = 3;
-const EMISSION_RATE = 4;
+const EMISSION_RATE = 1;
 const TOTAL_FILL_STEPS = 500;
 
-// --- CONFIGURAÇÕES DE UI/DESENHO ---
+// configurações dos desenho cm variávies
 const BUTTON_RADIUS = 45;
 const BUTTON_DIAMETER = BUTTON_RADIUS * 2;
 const BUTTON_MARGIN = 10;
@@ -51,9 +51,9 @@ let fillCounter = 0;
 let totalLitersConsumed = 0;
 const maxWaterHeight = SHAPE_RADIUS * 2;
 const totalCapacity = {
-    bola: 3000,
+    bola: 2500,
     tshirt: 5000,
-    phone: 15000,
+    phone: 12000,
     cup: 2000
 };
 let currentShape = 'bola';
@@ -68,15 +68,15 @@ const waterDrops = [];
 const seaCreatures = [];
 const numFish = 10;
 const numJellyfish = 5;
-const numRay = 2;
+const numRay = 3;
 
 
-// --- CLASSE BOLHA (Para o Splash Screen) ---
+// bolha da intro
 class Bubble {
     constructor(w, h) {
         this.x = Math.random() * w;
         this.y = h + Math.random() * h;
-        this.r = Math.random() * 5 + 2;
+        this.r = Math.random() * 10 + 2;
         this.speed = Math.random() * 1 + 0.5;
         this.color = `rgba(255, 255, 255, ${Math.random() * 0.5 + 0.2})`;
         this.w = w;
@@ -101,13 +101,13 @@ class Bubble {
 }
 
 
-// --- CLASSE GOTA ---
+// gotas
 class Gota {
     constructor(x, y) {
         this.x = x;
         this.y = y;
         this.r = DROP_RADIUS;
-        this.dX = Math.random() * 1;
+        this.dX = (Math.random() - 0.5) * 1.5;
         this.dY = Math.random() * 2;
         this.color = `rgba(100, 180, 255, ${Math.random() * 0.4 + 0.6})`;
         this.alive = true;
@@ -212,7 +212,7 @@ class Jellyfish extends SeaCreature {
         ctx.beginPath(); ctx.arc(0, 0, this.size, 0, Math.PI, true); ctx.closePath();
         ctx.fill(); ctx.stroke();
 
-        // Tentáculos (Bezier Curves)
+        // Tentáculos (Bezier curvas)
         for (let i = 0; i < 5; i++) {
             ctx.beginPath();
             const startX = (i / 4) * (this.size * 1.6) - (this.size * 0.8);
@@ -452,8 +452,6 @@ function drawTshirt() {
     ctx.lineTo(C.x - R * 1.1 - R * 0.3, sleeveY);
     ctx.lineTo(C.x - R * 1.1, neckTopY);
 
-    // Decote
-    ctx.arc(C.x, neckTopY, R * 0.25, Math.PI, 0);
 
     ctx.closePath();
 
@@ -477,7 +475,7 @@ function drawCup() {
     const topWidth = R * 1.0;
     const bottomWidth = R * 0.8;
 
-    // Corpo
+    // Corpo do copo
     ctx.beginPath();
     ctx.moveTo(C.x - topWidth / 2.5, topY);
 
@@ -486,7 +484,7 @@ function drawCup() {
     ctx.lineTo(C.x - bottomWidth / 2.5, bottomY);
     ctx.closePath();
 
-    // Contorno corpo
+    // Contorno do copo
     ctx.strokeStyle = 'white';
     ctx.lineWidth = 4;
     ctx.stroke();
@@ -732,14 +730,14 @@ function drawInfoText() {
 
     ctx.font = '18px Arial';
 
-    let subtext = 'Aponte o dedo para a forma para a encher (ou clique e arraste com o rato)!';
+    let subtext = 'Clique ou aponte o dedo para a forma e enche-a!';
     if (fillCounter >= TOTAL_FILL_STEPS) {
          subtext = 'Capacidade Máxima Atingida!';
     }
 
     ctx.fillText(subtext, centerX, centerY + SHAPE_RADIUS + 60);
 
-    const accumulatedText = `Total Acumulado (Todos os produtos): ${totalLitersConsumed.toFixed(0).toLocaleString()} L`;
+    const accumulatedText = `Total Água gasta: ${totalLitersConsumed.toFixed(0).toLocaleString()} L`;
     ctx.fillText(accumulatedText, centerX, centerY + SHAPE_RADIUS + 85);
 
     ctx.restore();
@@ -755,7 +753,7 @@ function drawSpeechBubble() {
     const padding = 30;
     const arrowSize = 1;
 
-    // Ondas a mexer
+    //mexer
     const time = Date.now() / 400;
     const floatY = Math.sin(time) * 10;
     const scalePulse = Math.sin(time * 0.5) * 0.01 + 1;
@@ -803,11 +801,10 @@ function drawSpeechBubble() {
 
     ctx.beginPath();
     const borderRadius = 60;
-    // Utiliza ctx.roundRect (disponível em navegadores modernos) ou recria-o
     if (ctx.roundRect) {
         ctx.roundRect(boxX, boxY, boxWidth, boxHeight, borderRadius);
     } else {
-        // Fallback simples
+        // Fallback
         ctx.rect(boxX, boxY, boxWidth, boxHeight);
     }
     ctx.fill();
@@ -901,7 +898,7 @@ function drawButtons() {
 }
 
 
-// Desenha o botão "Esvaziar"
+// botão esvaziar
 function drawEmptyButton() {
     if (emptyButtonOpacity <= 0) return;
 
@@ -977,13 +974,13 @@ function updateEmptyButtonAnimation() {
     } else {
         // Desaparecer
         emptyButtonOpacity = Math.max(0.0, emptyButtonOpacity - speed);
-        emptyButtonScale = Math.max(0.5, emptyButtonScale - speed);
+        emptyButtonScale = Math.max(1, emptyButtonScale - speed);
     }
 }
 
 
 function draw() {
-    // 1. Limpa o canvas e adiciona gradiente
+    //Limpa o canvas e adiciona gradiente
     ctx.save();
     const gradientBackground = ctx.createLinearGradient(0, 0, 0, canvas.height);
     gradientBackground.addColorStop(0, `hsl(200, 80%, 20%)`);
@@ -994,18 +991,18 @@ function draw() {
     ctx.restore();
 
 
-    // 3. Desenha os animais
+    //Desenha os animais
     seaCreatures.forEach(creature => {
         creature.update();
         creature.draw(ctx);
     });
 
-    // 4. Determina qual ponteiro usar e se o preenchimento está ativo
+    //Determina qual ponteiro usar e se o preenchimento está ativo
     let activeX = mouseX;
     let activeY = mouseY;
     let isFingerDetected = false;
 
-    // Prioridade: Dedo > Rato
+    // Dedo > Rato
     if (hands.length > 0) {
         activeX = fingerHitbox.x;
         activeY = fingerHitbox.y;
@@ -1016,13 +1013,13 @@ function draw() {
     const isOverShape = checkPointInShapePath(activeX, activeY);
 
     const isFillingActive =
-        // Preenchimento pelo dedo (ML5): Dedo detetado E está sobre a forma
+        // Preenchimento pelo dedo / Dedo é clicado e esta emcima da forma
         (isFingerDetected && isOverShape && fillCounter < TOTAL_FILL_STEPS) ||
-        // Preenchimento pelo rato: Rato clicado E está sobre a forma
+        // Preenchimento pelo rato / Rato é clicado e esta emcima da forma
         (isMouseDown && isOverShape && fillCounter < TOTAL_FILL_STEPS);
 
 
-    // 5. LÓGICA DE EMISSÃO DE GOTAS E DESENHO DO CURSOR ATIVO
+    // logica das gotas e desenho do cursor
 
     if (isFillingActive) {
         // Lógica de preenchimento
@@ -1035,14 +1032,14 @@ function draw() {
         }
     }
 
-    // DESENHO DO CURSOR (Seja Dedo ou Rato)
+    // desenho do cursor
     if (isFingerDetected || (isMouseDown && isOverShape)) {
-        // Usa as coordenadas ativas (dedo ou rato)
+        // Usa as coordenadas ativas
         const cursorX = activeX;
         const cursorY = activeY;
 
-        // Se for o dedo, desenha o cursor vermelho (emulador de dedo). Se for o rato, desenha verde claro
-        ctx.fillStyle = isFingerDetected ? "white" : 'rgba(250,250,250,0.5)';  //midarrrr
+        // Se for o dedo, desenha o cursor vermelho. Se for o rato, desenha a branco
+        ctx.fillStyle = isFingerDetected ? "white" : 'rgba(250,250,250,0.5)';
         ctx.beginPath();
         ctx.arc(cursorX, cursorY, fingerHitbox.r * 1.5, 0, 2 * Math.PI);
         ctx.fill();
@@ -1084,7 +1081,7 @@ function draw() {
         }
     }
 
-    // 6. Desenho da forma e água
+    // Desenho da forma e água
     drawWaterLevel();
 
     ctx.save();
@@ -1106,7 +1103,7 @@ function draw() {
     }
     ctx.restore();
 
-    // 7. Mascote
+    //Mascote
     if (mascotFish) {
         // Lógica de Hover Mascote: usa a posição ativa (dedo ou rato)
         const hoverX = activeX;
@@ -1121,23 +1118,23 @@ function draw() {
         drawSpeechBubble();
     }
 
-    // 8. Botões e texto
+    //Botões e texto
     drawButtons();
     drawInfoText();
     drawEmptyButton();
 
 
-    // 9. DESENHA O MINI-VIEW DA CÂMARA NO CANTO SUPERIOR DIREITO
+    // mini view da camara
     if (video && isCameraLoaded) {
-        const miniW = W / 6; // 1/5 da largura
-        const miniH = H / 6; // 1/5 da altura
+        const miniW = W / 6; // largura
+        const miniH = H / 6; //altura
         const margin = 20;
         const startX = W - miniW - margin;
         const startY = margin;
 
         ctx.save();
 
-        // CÂMARA MINIATURA (O desenho em si está espelhado)
+        // mini camara
         ctx.translate(startX + miniW, startY);
         ctx.scale(-1, 1);
 
@@ -1146,16 +1143,16 @@ function draw() {
 
         ctx.restore();
 
-        // ADICIONAR PONTEIRO NA MINIATURA:
+        // dedo na camara
         if (hands.length > 0) {
 
             // Mapeia as coordenadas do dedo (0 a W/H do ecrã) para as dimensões da miniatura
             const fingerMiniX = startX + (fingerHitbox.x / W) * miniW;
             const fingerMiniY = startY + (fingerHitbox.y / H) * miniH;
 
-            ctx.fillStyle = 'red'; // Usa cor diferente para distinguir
+            ctx.fillStyle = 'red';
             ctx.beginPath();
-            ctx.arc(fingerMiniX, fingerMiniY, fingerHitbox.r * 0.5, 0, 2 * Math.PI); // Raio menor
+            ctx.arc(fingerMiniX, fingerMiniY, fingerHitbox.r * 0.5, 0, 2 * Math.PI);
             ctx.fill();
         }
 
@@ -1166,11 +1163,11 @@ function draw() {
     }
 }
 
-// --- FUNÇÕES ML5.js E CÂMARA ---
+// funções ml5 e da camara
 
 // Inicializa a webcam e retorna o elemento de vídeo
 async function setupVideo() {
-    // Cria um elemento de vídeo no DOM (mas escondido)
+    // Cria um elemento de vídeo no DOM
     video = document.createElement('video');
     video.id = 'webcamVideo';
     video.width = W;
@@ -1225,7 +1222,7 @@ async function initGame() {
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    // --- ADIÇÃO DOS EVENTOS DO RATO ---
+    // rato
     // Move o ponteiro do rato
     canvas.addEventListener('mousemove', (e) => {
         const rect = canvas.getBoundingClientRect();
@@ -1242,8 +1239,6 @@ async function initGame() {
     canvas.addEventListener('mouseup', (e) => {
         isMouseDown = false;
     });
-    // --- FIM DA ADIÇÃO DOS EVENTOS DO RATO ---
-
 
     // Inicia a câmara e espera
     video = await setupVideo();
@@ -1255,7 +1250,7 @@ async function initGame() {
         console.log("Deteção de mãos iniciada.");
     }
 
-    // Adicionar listener para o clique (para os botões de UI)
+    // Adicionar listener para o clique
     canvas.addEventListener('click', function(event) {
         const rect = canvas.getBoundingClientRect();
         const x = event.clientX - rect.left;
@@ -1280,7 +1275,7 @@ async function initGame() {
     animate();
 }
 
-// --- FUNÇÕES DE UTILIDADE ---
+// funções de utilidade
 
 function getShapePath() {
     const R = SHAPE_RADIUS;
@@ -1306,8 +1301,8 @@ function getShapePath() {
         ctx.lineTo(C.x - R * 0.9, armpitY);
         ctx.lineTo(C.x - R * 1.1 - R * 0.3, sleeveY);
         ctx.lineTo(C.x - R * 1.1, neckTopY);
-        ctx.arc(C.x, neckTopY, R * 0.25, Math.PI, 0);
         ctx.closePath();
+
     } else if (currentShape === 'phone') {
         const width = R * 1.5;
         const height = R * 2.5;
@@ -1369,7 +1364,7 @@ function animate() {
     requestAnimationFrame(animate);
 }
 
-// --- LÓGICA DO SPLASH SCREEN ---
+// lógica da intro
 
 function initSplash() {
     const splashScreenElement = document.getElementById('splash-screen');
