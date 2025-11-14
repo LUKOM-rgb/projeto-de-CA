@@ -1,5 +1,14 @@
 let canvas;
 let ctx;
+// Adicionadas W e H para garantir que são globais e usadas corretamente
+let W;
+let H;
+
+// --- NOVAS VARIÁVEIS PARA O SPLASH SCREEN ---
+let splashCanvas;
+let splashCtx;
+const bubbles = [];
+const NUM_BUBBLES = 50;
 
 // --- CONSTANTES DE SISTEMA E FÍSICA (Matéria: Aceleração/Física) ---
 const GRAVITY = 0.1; // Aceleração constante em Y
@@ -36,17 +45,52 @@ const totalCapacity = {
 };
 let currentShape = 'bola';
 
-// --- NOVO: Variáveis para o Botão Esvaziar (no Canvas) ---
+// Variaveis do botão esvaziar
 let emptyButtonRect = {};
 let emptyButtonOpacity = 0.0;
 let emptyButtonScale = 0.5;
 
-// --- ARRAYS DE OBJETOS EM ANIMAÇÃO NO CANVAS ---
+// animação
 const waterDrops = [];
 const seaCreatures = [];
 const numFish = 10;
 const numJellyfish = 5;
 const numRay = 2;
+
+
+// --- CLASSE BOLHA (Para o Splash Screen) ---
+class Bubble {
+    constructor(w, h) {
+        this.x = Math.random() * w;
+        this.y = h + Math.random() * h; // Começa abaixo da tela
+        this.r = Math.random() * 5 + 2; // Raio entre 2 e 7
+        this.speed = Math.random() * 1 + 0.5;
+        this.color = `rgba(255, 255, 255, ${Math.random() * 0.5 + 0.2})`;
+        this.w = w;
+        this.h = h;
+    }
+
+    update() {
+        // Movimento para cima
+        this.y -= this.speed;
+
+        // Oscilação lateral (senoidal)
+        this.x += Math.sin(this.y / 20) * 0.1;
+
+        // Se sair por cima, reposiciona em baixo
+        if (this.y < -this.r) {
+            this.y = this.h + this.r;
+            this.x = Math.random() * this.w;
+        }
+    }
+
+    draw(ctx) {
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
 
 
 // --- CLASSE GOTA ---
@@ -81,7 +125,7 @@ class Gota {
 }
 
 
-// --- CLASSE BASE E SUBCLASSES DE ANIMAÇÃO DE FUNDO ---
+// animação no fundo
 class SeaCreature {
     constructor(x, y, size, speed, color, shape, direction) {
         this.x = x;
@@ -312,6 +356,10 @@ function resizeCanvas() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
+    // ATUALIZA AS VARIÁVEIS GLOBAIS W e H
+    W = canvas.width;
+    H = canvas.height;
+
     centerX = canvas.width / 2;
     centerY = (canvas.height - SHAPE_OFFSET_Y) / 2 + SHAPE_OFFSET_Y;
 
@@ -341,7 +389,7 @@ function resizeCanvas() {
         r: BUTTON_RADIUS
     };
 
-    // NOVO: Posição do botão Esvaziar (canto inferior direito)
+    // Posição do botão esvaziar
     emptyButtonRect = {
         x: canvas.width - BUTTON_RADIUS * 0.7 - BUTTON_MARGIN * 70,
         y: canvas.height - BUTTON_RADIUS * 0.7 - BUTTON_MARGIN * 20,
@@ -831,7 +879,6 @@ function drawButtons() {
     ctx.restore();
 }
 
-// --- NOVO: Desenho e Animação do Botão Esvaziar ---
 
 // Desenha o botão "Esvaziar"
 function drawEmptyButton() {
@@ -844,27 +891,27 @@ function drawEmptyButton() {
     const cy = emptyButtonRect.y;
     const r = emptyButtonRect.r;
 
-    // Aplica a opacidade e a transformação de escala (animação)
+    // Aplica a opacidade e a transformação de escala
     ctx.globalAlpha = emptyButtonOpacity;
     ctx.translate(cx, cy);
     ctx.scale(emptyButtonScale, emptyButtonScale);
     ctx.translate(-cx, -cy);
 
-    // Efeito de Pulso (similar aos botões de cima)
+    // Efeito de Pulso
     const pulse = Math.sin(Date.now() / 400) * 0.05 + 1;
 
     ctx.translate(cx, cy);
     ctx.scale(pulse, pulse);
     ctx.translate(-cx, -cy);
 
-    // Gradiente de Aviso (Vermelho/Laranja)
+    // Gradiente de Aviso
     const bubbleGradient = ctx.createRadialGradient(
         cx - r * 0.3, cy - r * 0.3, r * 0.1,
         cx, cy, r
     );
 
-    const colorStart = 'rgba(231, 76, 60, 0.7)'; // Vermelho Claro
-    const colorEnd = 'rgba(192, 57, 43, 0.4)';  // Vermelho Escuro
+    const colorStart = 'rgba(231, 76, 60, 0.7)';
+    const colorEnd = 'rgba(192, 57, 43, 0.4)';
 
     bubbleGradient.addColorStop(0, colorStart);
     bubbleGradient.addColorStop(0.9, colorEnd);
@@ -898,17 +945,17 @@ function drawEmptyButton() {
     ctx.restore();
 }
 
-// Lógica da animação de aparecer/desaparecer (transição)
+// Lógica da animação de aparecer/desaparecer
 function updateEmptyButtonAnimation() {
     const hasWater = fillCounter > 0;
     const speed = 0.08; // Velocidade da transição
 
     if (hasWater) {
-        // Aparecer: Aumenta opacidade e escala até 1.0
+        // Aparecer
         emptyButtonOpacity = Math.min(1.0, emptyButtonOpacity + speed);
         emptyButtonScale = Math.min(1.0, emptyButtonScale + speed);
     } else {
-        // Desaparecer: Diminui opacidade e escala até 0.0 / 0.5 (estado inicial invisível)
+        // Desaparecer
         emptyButtonOpacity = Math.max(0.0, emptyButtonOpacity - speed);
         emptyButtonScale = Math.max(0.5, emptyButtonScale - speed);
     }
@@ -1011,7 +1058,8 @@ function draw() {
                 ctx.closePath();
             }
 
-            if (ctx.isPointInPath(drop.x, drop.y)) { // Testa se a gota está dentro do caminho da forma
+            // isPointInPath para checar a colisão
+            if (ctx.isPointInPath(drop.x, drop.y)) {
                 drop.alive = false;
                 fillCounter++;
             }
@@ -1053,8 +1101,6 @@ function draw() {
     // Botões e texto
     drawButtons();
     drawInfoText();
-
-    // NOVO: Desenha o botão "Esvaziar"
     drawEmptyButton();
 
 }
@@ -1131,15 +1177,92 @@ function isClickInShape(x, y) {// A colisão para formas complexas é feita recr
     return ctx.isPointInPath(x, y);
 }
 
-// Inicialização e eventos
+// --- LÓGICA DO SPLASH SCREEN ---
 
+function initSplash() {
+    const splashScreenElement = document.getElementById('splash-screen');
+    if (!splashScreenElement) {
+         // Se não houver splash screen, inicia o jogo principal diretamente
+        init();
+        return;
+    }
+
+    splashCanvas = document.createElement('canvas');
+    splashCanvas.id = 'splashCanvas';
+    splashScreenElement.prepend(splashCanvas); // Adiciona o canvas antes de tudo no splash
+
+    splashCtx = splashCanvas.getContext('2d');
+    resizeSplashCanvas();
+    window.addEventListener('resize', resizeSplashCanvas);
+
+    // Inicializa as bolhas
+    for (let i = 0; i < NUM_BUBBLES; i++) {
+        bubbles.push(new Bubble(splashCanvas.width, splashCanvas.height));
+    }
+
+    animateSplash();
+}
+
+function resizeSplashCanvas() {
+    if (!splashCanvas) return;
+    splashCanvas.width = window.innerWidth;
+    splashCanvas.height = window.innerHeight;
+
+    // Atualiza as dimensões nas bolhas para que possam se reposicionar
+    bubbles.forEach(bubble => {
+        bubble.w = splashCanvas.width;
+        bubble.h = splashCanvas.height;
+    });
+}
+
+function animateSplash() {
+    if (!splashCtx) return;
+
+    // Desenha o fundo da água (gradiente azul escuro)
+    const gradientBackground = splashCtx.createLinearGradient(0, 0, 0, splashCanvas.height);
+    gradientBackground.addColorStop(0, `hsl(200, 80%, 20%)`);
+    gradientBackground.addColorStop(0.5, `hsl(210, 70%, 30%)`);
+    gradientBackground.addColorStop(1, `hsl(220, 60%, 10%)`);
+    splashCtx.globalAlpha = 1.0;
+    splashCtx.fillStyle = gradientBackground;
+    splashCtx.fillRect(0, 0, splashCanvas.width, splashCanvas.height);
+
+    // Desenha e atualiza as bolhas
+    bubbles.forEach(bubble => {
+        bubble.update();
+        bubble.draw(splashCtx);
+    });
+
+    // Se o splash screen ainda está visível, continua o loop
+    const splash = document.getElementById('splash-screen');
+    if (splash && splash.classList.contains('visible')) {
+        requestAnimationFrame(animateSplash);
+    } else {
+        // Quando o splash termina, remove o canvas e inicia o jogo principal
+        splashCanvas.remove();
+        window.removeEventListener('resize', resizeSplashCanvas);
+        init(); // Chama o init do jogo principal
+    }
+}
+
+
+// Inicialização e eventos - A função que realmente inicia o jogo
 function init() {
     canvas = document.getElementById('bolaCanvas');
     if (!canvas) {
-        console.error("Canvas element not found!");
+        console.error("ERRO GRAVE: Elemento Canvas ('bolaCanvas') não encontrado! O jogo não pode iniciar.");
         return;
     }
+    // Otimização: Garantir que ctx está ligado ao canvas correto
     ctx = canvas.getContext('2d');
+    if (!ctx) {
+        console.error("ERRO GRAVE: Não foi possível obter o contexto 2D do Canvas. O jogo não pode iniciar.");
+        return;
+    }
+
+    // Chamada a resizeCanvas() para definir W/H e centralizar
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas(); // Chama o redimensionamento inicial aqui para definir centerX/Y e W/H
 
     // Detetar Houver
     canvas.addEventListener('mousemove', function(event) {
@@ -1159,6 +1282,7 @@ function init() {
     });
 
 
+    // Adicionar listener para o clique (que dispara as gotas)
     canvas.addEventListener('click', function(event) {
         const rect = canvas.getBoundingClientRect();
         const x = event.clientX - rect.left;
@@ -1174,7 +1298,6 @@ function init() {
             selectShape('cup');
         }
 
-        // NOVO: Detetar clique no botão Esvaziar (se estiver visível/em transição)
         else if (isClickInCircle(x, y, emptyButtonRect) && fillCounter > 0) {
             // Esvaziar a forma e reiniciar contadores
             fillCounter = 0;
@@ -1195,18 +1318,17 @@ function init() {
         }
     });
 
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
+    // Inicia o loop de animação
     animate();
 }
 
 // Loop de animação
 function animate() {
     draw();
-    // NOVO: Atualiza a animação de opacidade e escala em cada frame
+    // Atualiza a animação de opacidade e escala em cada frame
     updateEmptyButtonAnimation();
     requestAnimationFrame(animate);
 }
 
-// Ponto de entrada final
-window.addEventListener('load', init);
+// Ponto de entrada final: Inicia o Splash Screen, que depois chama init()
+window.addEventListener('load', initSplash);

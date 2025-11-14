@@ -24,4 +24,80 @@ canvas {
     cursor: default;
 }
 
-/* Regras de CSS que não são de layout foram removidas. */
+/* --- ESTILOS ADICIONAIS PARA O SPLASH SCREEN --- */
+
+/* Estilos para o novo Canvas do Splash Screen (onde as bolhas animam) */
+#splashCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+/* Contêiner principal do Splash Screen (o que esconde o jogo) */
+#splash-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+
+    /* Nota: O fundo é pintado pelo splashCanvas para o efeito de rasto */
+    background-color: rgba(0, 0, 0, 0);
+
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+
+    /* Garante que fica por cima do canvas principal do jogo */
+    z-index: 1000;
+
+    /* Transição suave para desaparecer */
+    transition: opacity 1.5s ease-out;
+}
+
+/* Estado VISÍVEL do Splash */
+#splash-screen.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Estado INVISÍVEL do Splash */
+#splash-screen:not(.visible) {
+    opacity: 0;
+    /* Impede cliques no splash depois de desaparecer */
+    pointer-events: none;
+}
+
+/* Garante que o texto fica visível acima do canvas de bolhas (z-index 1) */
+#splash-screen > * {
+    z-index: 2;
+    text-shadow: 0 0 10px rgba(0,0,0,0.8);
+}
+
+#splash-screen h1 {
+    font-size: 2.5em;
+    margin-bottom: 0.5em;
+}
+
+#splash-screen h3 {
+    margin-top: 2em;
+    opacity: 0.8;
+    animation: pulse 1.5s infinite alternate;
+}
+
+@keyframes pulse {
+  from {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+}

@@ -12,7 +12,8 @@
 
     <div id="splash-screen" class="visible">
         <h1>ODS 12: Consumo Consciente de Água</h1>
-        <div class="loading-bar"></div>
+        <h3>Clique para Continuar</h3>
+        <p>A produção de objetos exige grandes quantidades de água. Veja quanto consome cada um!</p>
     </div>
 
     <script src="script.js"></script>
@@ -20,9 +21,11 @@
     <script>
         document.addEventListener('click', function(event) {
             const splash = document.getElementById('splash-screen');
+            // Remove a classe 'visible' para iniciar a transição CSS e o callback no JS
             if (splash && splash.classList.contains('visible')) {
                 splash.classList.remove('visible');
-                // Opcional: Remover o elemento completamente se quiser
+                // A função animateSplash() em script.js detecta esta mudança
+                // para parar o loop de bolhas e chamar init()
             }
         });
     </script>
