@@ -1,8 +1,21 @@
 let canvas;
 let ctx;
-// Adicionadas W e H para garantir que são globais e usadas corretamente
 let W;
 let H;
+
+// --- VARIÁVEIS ML5 E CÂMARA ---
+let video;
+let handpose;
+let hands = [];
+let isCameraLoaded = false;
+let fingerHitbox = { x: 0, y: 0, r: 10, smoothing: 0.2 };
+
+// --- VARIÁVEIS DO RATO (REINTRODUZIDAS) ---
+let mouseX = 0;
+let mouseY = 0;
+let isMouseDown = false;
+let isFillingActive = false;
+
 
 // --- NOVAS VARIÁVEIS PARA O SPLASH SCREEN ---
 let splashCanvas;
@@ -11,10 +24,10 @@ const bubbles = [];
 const NUM_BUBBLES = 50;
 
 // --- CONSTANTES DE SISTEMA E FÍSICA (Matéria: Aceleração/Física) ---
-const GRAVITY = 0.1; // Aceleração constante em Y
-const DROP_RADIUS = 3; // Tamanho da gota
-const EMISSION_RATE = 4; // Gotas a emitir por clique
-const TOTAL_FILL_STEPS = 500; // Número de gotas/steps para encher totalmente
+const GRAVITY = 0.1;
+const DROP_RADIUS = 3;
+const EMISSION_RATE = 4;
+const TOTAL_FILL_STEPS = 500;
 
 // --- CONFIGURAÇÕES DE UI/DESENHO ---
 const BUTTON_RADIUS = 45;
@@ -31,11 +44,11 @@ let tshirtButtonRect = {};
 let phoneButtonRect = {};
 let cupButtonRect = {};
 
-let mascotFish = null; // A instância do nosso peixe mascote
-let isMascotHovered = false; // Estado de hover
+let mascotFish = null;
+let isMascotHovered = false;
 
 let fillCounter = 0;
-let totalLitersConsumed = 0; // Contador de litros global (NÃO RESETA)
+let totalLitersConsumed = 0;
 const maxWaterHeight = SHAPE_RADIUS * 2;
 const totalCapacity = {
     bola: 3000,
@@ -62,8 +75,8 @@ const numRay = 2;
 class Bubble {
     constructor(w, h) {
         this.x = Math.random() * w;
-        this.y = h + Math.random() * h; // Começa abaixo da tela
-        this.r = Math.random() * 5 + 2; // Raio entre 2 e 7
+        this.y = h + Math.random() * h;
+        this.r = Math.random() * 5 + 2;
         this.speed = Math.random() * 1 + 0.5;
         this.color = `rgba(255, 255, 255, ${Math.random() * 0.5 + 0.2})`;
         this.w = w;
@@ -71,13 +84,8 @@ class Bubble {
     }
 
     update() {
-        // Movimento para cima
         this.y -= this.speed;
-
-        // Oscilação lateral (senoidal)
         this.x += Math.sin(this.y / 20) * 0.1;
-
-        // Se sair por cima, reposiciona em baixo
         if (this.y < -this.r) {
             this.y = this.h + this.r;
             this.x = Math.random() * this.w;
@@ -99,7 +107,7 @@ class Gota {
         this.x = x;
         this.y = y;
         this.r = DROP_RADIUS;
-        this.dX = (Math.random() - 0.5) * 1.5;
+        this.dX = Math.random() * 1;
         this.dY = Math.random() * 2;
         this.color = `rgba(100, 180, 255, ${Math.random() * 0.4 + 0.6})`;
         this.alive = true;
@@ -172,14 +180,19 @@ class Fish extends SeaCreature {
         ctx.strokeStyle = `rgba(0,0,0,0.3)`;
         ctx.lineWidth = 1;
         ctx.beginPath();
+        // Corpo do peixe
         ctx.ellipse(0, 0, this.size, this.size * 0.6, 0, 0, Math.PI * 2);
         ctx.fill(); ctx.stroke();
+
+        // Cauda
         ctx.beginPath();
         ctx.moveTo(-this.size, 0);
         ctx.lineTo(-this.size * 1.5, -this.size * 0.5);
         ctx.lineTo(-this.size * 1.5, this.size * 0.5);
         ctx.closePath();
         ctx.fill(); ctx.stroke();
+
+        // Olho
         ctx.beginPath();
         ctx.arc(this.size * 0.6, -this.size * 0.1, this.size * 0.1, 0, Math.PI * 2);
         ctx.fillStyle = 'black'; ctx.fill();
@@ -194,8 +207,12 @@ class Jellyfish extends SeaCreature {
         ctx.translate(this.x, this.y);
         ctx.fillStyle = this.color;
         ctx.strokeStyle = `rgba(0,0,0,0.2)`; ctx.lineWidth = 2;
+
+        // Corpo do Medusa
         ctx.beginPath(); ctx.arc(0, 0, this.size, 0, Math.PI, true); ctx.closePath();
         ctx.fill(); ctx.stroke();
+
+        // Tentáculos (Bezier Curves)
         for (let i = 0; i < 5; i++) {
             ctx.beginPath();
             const startX = (i / 4) * (this.size * 1.6) - (this.size * 0.8);
@@ -223,38 +240,31 @@ class Ray extends SeaCreature {
     draw() {
         super.draw();
 
-        const flap = Math.sin(Date.now() / 150 + this.oscillation) * this.size * 0.3; // Batida das asas
+        const flap = Math.sin(Date.now() / 150 + this.oscillation) * this.size * 0.3;
 
         ctx.fillStyle = this.color;
         ctx.strokeStyle = `rgba(0,0,0,0.2)`;
         ctx.lineWidth = 1;
 
         ctx.beginPath();
-        // Corpo
-        ctx.ellipse(0, 0, this.size * 1.2, this.size * 0.8, 0, 0, Math.PI * 2);
-
-        // Barbatana
-        ctx.moveTo(0, 0);
-        ctx.quadraticCurveTo(this.size * 0.5, -this.size * 1.5 - flap, this.size * 1.8, 0);
-        ctx.moveTo(0, 0);
-        ctx.quadraticCurveTo(this.size * 0.5, this.size * 1.5 + flap, this.size * 1.8, 0);
-
-        ctx.moveTo(0, 0);
-        ctx.quadraticCurveTo(-this.size * 0.5, -this.size * 1.5 - flap, -this.size * 1.8, 0);
-        ctx.moveTo(0, 0);
-        ctx.quadraticCurveTo(-this.size * 0.5, this.size * 1.5 + flap, -this.size * 1.8, 0);
-
-        // Cauda
-        ctx.moveTo(-this.size * 0.8, 0);
-        ctx.lineTo(-this.size * 2.5, 0);
+        // Corpo e Barbatanas
+        ctx.moveTo(this.size * 1.2, 0);
+        ctx.quadraticCurveTo(this.size * 0.5, -this.size * 1.5 - flap, -this.size * 1.8, 0);
+        ctx.quadraticCurveTo(this.size * 0.5, this.size * 1.5 + flap, this.size * 1.2, 0);
 
         ctx.fill();
         ctx.stroke();
 
+        // Cauda
+        ctx.beginPath();
+        ctx.moveTo(-this.size * 1.8, 0);
+        ctx.lineTo(-this.size * 2.5, 0);
+        ctx.stroke();
+
         // Olhos
         ctx.beginPath();
-        ctx.arc(this.size * 0.5, -this.size * 0.2, this.size * 0.1, 0, Math.PI * 2);
-        ctx.arc(this.size * 0.2, -this.size * 0.2, this.size * 0.1, 0, Math.PI * 2);
+        ctx.arc(this.size * 0.8, -this.size * 0.2, this.size * 0.1, 0, Math.PI * 2);
+        ctx.arc(this.size * 0.8, this.size * 0.2, this.size * 0.1, 0, Math.PI * 2);
         ctx.fillStyle = 'black';
         ctx.fill();
 
@@ -288,15 +298,15 @@ class MascotFish {
 
         // Gradiente pro peixe
         const gradient = ctx.createLinearGradient(-this.size, 0, this.size, 0);
-        gradient.addColorStop(0, '#FFD700'); // Amarelo Dourado (Luz)
-        gradient.addColorStop(0.5, '#FF8C00'); // Laranja Escuro (Centro)
-        gradient.addColorStop(1, '#B8860B'); // Marrom Dourado (Sombra)
+        gradient.addColorStop(0, '#FFD700');
+        gradient.addColorStop(0.5, '#FF8C00');
+        gradient.addColorStop(1, '#B8860B');
 
         // Corpo
         ctx.beginPath();
         ctx.ellipse(0, 0, this.size, this.size * 0.6, 0, 0, Math.PI * 2);
 
-        ctx.fillStyle = gradient; // APLICA O GRADIENTE
+        ctx.fillStyle = gradient;
         ctx.fill();
 
         ctx.strokeStyle = `rgba(0,0,0,0.3)`;
@@ -323,7 +333,7 @@ class MascotFish {
         ctx.restore();
     }
 
-    update() { // Assim fica fixo
+    update() {
     }
 }
 
@@ -402,7 +412,7 @@ function resizeCanvas() {
         mascotSize * 2,
         canvas.height - mascotSize * 1.5,
         mascotSize,
-        1 // Fica virado para a direita
+        1
     );
 
     waterDrops.length = 0;
@@ -426,8 +436,8 @@ function drawTshirt() {
 
     // Ombro direito e manga
     ctx.lineTo(shoulderOutX, neckTopY);
-    ctx.lineTo(shoulderOutX + R * 0.3, sleeveY); // Ponta da manga
-    ctx.lineTo(C.x + R * 0.9, armpitY); // Axila
+    ctx.lineTo(shoulderOutX + R * 0.3, sleeveY);
+    ctx.lineTo(C.x + R * 0.9, armpitY);
 
     // Lado direito do corpo
     ctx.lineTo(C.x + bodyWidth / 2, bottomY);
@@ -436,11 +446,14 @@ function drawTshirt() {
     ctx.lineTo(C.x - bodyWidth / 2, bottomY);
 
     // Lado esquerdo do corpo
-    ctx.lineTo(C.x - R * 0.9, armpitY); // Axila
+    ctx.lineTo(C.x - R * 0.9, armpitY);
 
     // Ombro esquerdo e manga
     ctx.lineTo(C.x - R * 1.1 - R * 0.3, sleeveY);
     ctx.lineTo(C.x - R * 1.1, neckTopY);
+
+    // Decote
+    ctx.arc(C.x, neckTopY, R * 0.25, Math.PI, 0);
 
     ctx.closePath();
 
@@ -601,7 +614,7 @@ function drawBolaPattern() {
 
 function drawWaterLevel() {// Calcúla a altura máxima e define o ponto de partida no fundo da forma
     let shapeMaxHeight = maxWaterHeight;
-    let shapeBottomY = centerY + SHAPE_RADIUS; // Ponto de referência mais baixo para a maioria das formas
+    let shapeBottomY = centerY + SHAPE_RADIUS;
     const R = SHAPE_RADIUS;
 
     if (currentShape === 'phone') {
@@ -612,11 +625,12 @@ function drawWaterLevel() {// Calcúla a altura máxima e define o ponto de part
         shapeBottomY = centerY + R * 1.0;
     }
 
-    const waterHeight = (fillCounter / TOTAL_FILL_STEPS) * shapeMaxHeight; // Usa a nova altura máxima específica
-    const waterY = shapeBottomY - waterHeight; // Usa o novo ponto de partida base específico
+    const waterHeight = (fillCounter / TOTAL_FILL_STEPS) * shapeMaxHeight;
+    const waterY = shapeBottomY - waterHeight;
 
     ctx.save();
 
+    // 1. Cria a máscara (Clipping Path)
     ctx.beginPath();
     if (currentShape === 'bola') {
         ctx.arc(centerX, centerY, SHAPE_RADIUS, 0, Math.PI * 2);
@@ -669,7 +683,7 @@ function drawWaterLevel() {// Calcúla a altura máxima e define o ponto de part
         const topWidth = R * 1.0;
         const bottomWidth = R * 0.8;
 
-        ctx.moveTo(C.x - topWidth / 2, topY);
+        ctx.moveTo(C.x - topWidth / 2.5, topY);
         ctx.lineTo(C.x + topWidth / 1.5, topY);
         ctx.lineTo(C.x + bottomWidth / 1.19, bottomY);
         ctx.lineTo(C.x - bottomWidth / 2.5, bottomY);
@@ -678,6 +692,7 @@ function drawWaterLevel() {// Calcúla a altura máxima e define o ponto de part
     ctx.clip();
 
 
+    // 2. Desenha a Água (o retângulo que é limitado pela máscara)
     ctx.beginPath();
     ctx.rect(centerX - SHAPE_RADIUS * 2, waterY, SHAPE_RADIUS * 4, shapeBottomY - waterY);
     const gradient = ctx.createLinearGradient(0, centerY - SHAPE_RADIUS, 0, centerY + SHAPE_RADIUS);
@@ -686,7 +701,7 @@ function drawWaterLevel() {// Calcúla a altura máxima e define o ponto de part
     ctx.fillStyle = gradient;
     ctx.fill();
 
-    // Onda da Água
+    // 3. Desenha a Onda no Topo
     ctx.beginPath();
     const waveWidth = SHAPE_RADIUS * 2;
     ctx.moveTo(centerX - waveWidth / 2, waterY);
@@ -717,7 +732,7 @@ function drawInfoText() {
 
     ctx.font = '18px Arial';
 
-    let subtext = 'Clique na forma para a encher!';
+    let subtext = 'Aponte o dedo para a forma para a encher (ou clique e arraste com o rato)!';
     if (fillCounter >= TOTAL_FILL_STEPS) {
          subtext = 'Capacidade Máxima Atingida!';
     }
@@ -742,8 +757,8 @@ function drawSpeechBubble() {
 
     // Ondas a mexer
     const time = Date.now() / 400;
-    const floatY = Math.sin(time) * 10; // Flutuação vertical
-    const scalePulse = Math.sin(time * 0.5) * 0.01 + 1; // Pulsação de escala
+    const floatY = Math.sin(time) * 10;
+    const scalePulse = Math.sin(time * 0.5) * 0.01 + 1;
 
     ctx.font = '20px Arial, sans-serif';
     ctx.textAlign = 'left';
@@ -757,7 +772,7 @@ function drawSpeechBubble() {
     const boxHeight = lines.length * lineHeight + padding * 2;
 
     const boxX = fish.x + fish.size * 2;
-    const boxY = fish.y - boxHeight - arrowSize + floatY; // flutuação Y
+    const boxY = fish.y - boxHeight - arrowSize + floatY;
 
     // Move para o centro da caixa para aplicar a escala
     const boxCenterX = boxX + boxWidth / 2;
@@ -788,7 +803,13 @@ function drawSpeechBubble() {
 
     ctx.beginPath();
     const borderRadius = 60;
-    ctx.roundRect(boxX, boxY, boxWidth, boxHeight, borderRadius);
+    // Utiliza ctx.roundRect (disponível em navegadores modernos) ou recria-o
+    if (ctx.roundRect) {
+        ctx.roundRect(boxX, boxY, boxWidth, boxHeight, borderRadius);
+    } else {
+        // Fallback simples
+        ctx.rect(boxX, boxY, boxWidth, boxHeight);
+    }
     ctx.fill();
     ctx.stroke();
 
@@ -882,7 +903,6 @@ function drawButtons() {
 
 // Desenha o botão "Esvaziar"
 function drawEmptyButton() {
-    // Só desenha se a opacidade for maior que 0
     if (emptyButtonOpacity <= 0) return;
 
     ctx.save();
@@ -948,7 +968,7 @@ function drawEmptyButton() {
 // Lógica da animação de aparecer/desaparecer
 function updateEmptyButtonAnimation() {
     const hasWater = fillCounter > 0;
-    const speed = 0.08; // Velocidade da transição
+    const speed = 0.08;
 
     if (hasWater) {
         // Aparecer
@@ -963,7 +983,7 @@ function updateEmptyButtonAnimation() {
 
 
 function draw() {
-    // Limpa o canvas e adiciona gradiente
+    // 1. Limpa o canvas e adiciona gradiente
     ctx.save();
     const gradientBackground = ctx.createLinearGradient(0, 0, 0, canvas.height);
     gradientBackground.addColorStop(0, `hsl(200, 80%, 20%)`);
@@ -973,13 +993,63 @@ function draw() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.restore();
 
-    // Desenha os animais
+
+    // 3. Desenha os animais
     seaCreatures.forEach(creature => {
         creature.update();
         creature.draw(ctx);
     });
 
-    // Atualização e desenho das gotas
+    // 4. Determina qual ponteiro usar e se o preenchimento está ativo
+    let activeX = mouseX;
+    let activeY = mouseY;
+    let isFingerDetected = false;
+
+    // Prioridade: Dedo > Rato
+    if (hands.length > 0) {
+        activeX = fingerHitbox.x;
+        activeY = fingerHitbox.y;
+        isFingerDetected = true;
+    }
+
+    // Define a condição de preenchimento
+    const isOverShape = checkPointInShapePath(activeX, activeY);
+
+    const isFillingActive =
+        // Preenchimento pelo dedo (ML5): Dedo detetado E está sobre a forma
+        (isFingerDetected && isOverShape && fillCounter < TOTAL_FILL_STEPS) ||
+        // Preenchimento pelo rato: Rato clicado E está sobre a forma
+        (isMouseDown && isOverShape && fillCounter < TOTAL_FILL_STEPS);
+
+
+    // 5. LÓGICA DE EMISSÃO DE GOTAS E DESENHO DO CURSOR ATIVO
+
+    if (isFillingActive) {
+        // Lógica de preenchimento
+        const maxCapacity = totalCapacity[currentShape];
+        const litersPerStep = maxCapacity / TOTAL_FILL_STEPS;
+        totalLitersConsumed += litersPerStep * EMISSION_RATE;
+
+        for (let i = 0; i < EMISSION_RATE; i++) {
+            waterDrops.push(new Gota(activeX, activeY));
+        }
+    }
+
+    // DESENHO DO CURSOR (Seja Dedo ou Rato)
+    if (isFingerDetected || (isMouseDown && isOverShape)) {
+        // Usa as coordenadas ativas (dedo ou rato)
+        const cursorX = activeX;
+        const cursorY = activeY;
+
+        // Se for o dedo, desenha o cursor vermelho (emulador de dedo). Se for o rato, desenha verde claro
+        ctx.fillStyle = isFingerDetected ? "white" : 'rgba(250,250,250,0.5)';  //midarrrr
+        ctx.beginPath();
+        ctx.arc(cursorX, cursorY, fingerHitbox.r * 1.5, 0, 2 * Math.PI);
+        ctx.fill();
+    }
+
+
+    // Processa a queda e colisão das gotas
     for (let i = waterDrops.length - 1; i >= 0; i--) {
         const drop = waterDrops[i];
 
@@ -1001,65 +1071,8 @@ function draw() {
 
 
         if (drop.y + drop.r >= currentWaterY && fillCounter < TOTAL_FILL_STEPS) {
-            // Verifica se a gota colidiu dentro da forma
-            // Para isso, precisamos de um PATH temporário para testar
-            ctx.beginPath();
-            if (currentShape === 'bola') {
-                ctx.arc(centerX, centerY, SHAPE_RADIUS, 0, Math.PI * 2);
-            } else if (currentShape === 'tshirt') {
-                const C = { x: centerX, y: centerY };
-                const neckTopY = C.y - R * 1.0;
-                const shoulderOutX = C.x + R * 1.1;
-                const sleeveY = C.y - R * 0.3;
-                const armpitY = C.y + R * 0.1;
-                const bottomY = C.y + R * 1.0;
-                const bodyWidth = R * 1.8;
-
-                ctx.beginPath();
-                ctx.lineTo(shoulderOutX, neckTopY);
-                ctx.lineTo(shoulderOutX + R * 0.3, sleeveY);
-                ctx.lineTo(C.x + R * 0.9, armpitY);
-                ctx.lineTo(C.x + bodyWidth / 2, bottomY);
-                ctx.lineTo(C.x - bodyWidth / 2, bottomY);
-                ctx.lineTo(C.x - R * 0.9, armpitY);
-                ctx.lineTo(C.x - R * 1.1 - R * 0.3, sleeveY);
-                ctx.lineTo(C.x - R * 1.1, neckTopY);
-                ctx.arc(C.x, neckTopY, R * 0.25, Math.PI, 0);
-                ctx.closePath();
-            } else if (currentShape === 'phone') {
-                const C = { x: centerX, y: centerY };
-                const width = R * 1.5;
-                const height = R * 2.5;
-                const borderRadius = R * 0.2;
-                const x = C.x - width / 2;
-                const y = C.y - height / 2;
-
-                ctx.moveTo(x + borderRadius, y);
-                ctx.lineTo(x + width - borderRadius, y);
-                ctx.arcTo(x + width, y, x + width, y + borderRadius, borderRadius);
-                ctx.lineTo(x + width, y + height - borderRadius);
-                ctx.arcTo(x + width, y + height, x + width - borderRadius, y + height, borderRadius);
-                ctx.lineTo(x + borderRadius, y + height);
-                ctx.arcTo(x, y + height, x, y + height - borderRadius, borderRadius);
-                ctx.lineTo(x, y + borderRadius);
-                ctx.arcTo(x, y, x + borderRadius, y, borderRadius);
-                ctx.closePath();
-            } else if (currentShape === 'cup') {
-                const C = { x: centerX, y: centerY };
-                const topY = C.y - R * 0.8;
-                const bottomY = C.y + R * 1.0;
-                const topWidth = R * 1.0;
-                const bottomWidth = R * 0.8;
-
-                ctx.moveTo(C.x - topWidth / 2, topY);
-                ctx.lineTo(C.x + topWidth / 1.5, topY);
-                ctx.lineTo(C.x + bottomWidth / 1.19, bottomY);
-                ctx.lineTo(C.x - bottomWidth / 2.5, bottomY);
-                ctx.closePath();
-            }
-
-            // isPointInPath para checar a colisão
-            if (ctx.isPointInPath(drop.x, drop.y)) {
+            // Verifica se a gota colidiu dentro da forma (reutiliza checkPointInShapePath)
+            if (checkPointInShapePath(drop.x, drop.y)) {
                 drop.alive = false;
                 fillCounter++;
             }
@@ -1071,6 +1084,7 @@ function draw() {
         }
     }
 
+    // 6. Desenho da forma e água
     drawWaterLevel();
 
     ctx.save();
@@ -1092,39 +1106,191 @@ function draw() {
     }
     ctx.restore();
 
-    // Mascote
+    // 7. Mascote
     if (mascotFish) {
+        // Lógica de Hover Mascote: usa a posição ativa (dedo ou rato)
+        const hoverX = activeX;
+        const hoverY = activeY;
+
+        const distance = Math.sqrt(
+            Math.pow(hoverX - mascotFish.x, 2) + Math.pow(hoverY - mascotFish.y, 2)
+        );
+        isMascotHovered = distance <= mascotFish.hitboxR;
+
         mascotFish.draw();
-        drawSpeechBubble(); // Se o rato estiver por cima a bolha aparece
+        drawSpeechBubble();
     }
 
-    // Botões e texto
+    // 8. Botões e texto
     drawButtons();
     drawInfoText();
     drawEmptyButton();
 
+
+    // 9. DESENHA O MINI-VIEW DA CÂMARA NO CANTO SUPERIOR DIREITO
+    if (video && isCameraLoaded) {
+        const miniW = W / 6; // 1/5 da largura
+        const miniH = H / 6; // 1/5 da altura
+        const margin = 20;
+        const startX = W - miniW - margin;
+        const startY = margin;
+
+        ctx.save();
+
+        // CÂMARA MINIATURA (O desenho em si está espelhado)
+        ctx.translate(startX + miniW, startY);
+        ctx.scale(-1, 1);
+
+        // Desenha o vídeo no mini-retângulo
+        ctx.drawImage(video, 0, 0, miniW, miniH);
+
+        ctx.restore();
+
+        // ADICIONAR PONTEIRO NA MINIATURA:
+        if (hands.length > 0) {
+
+            // Mapeia as coordenadas do dedo (0 a W/H do ecrã) para as dimensões da miniatura
+            const fingerMiniX = startX + (fingerHitbox.x / W) * miniW;
+            const fingerMiniY = startY + (fingerHitbox.y / H) * miniH;
+
+            ctx.fillStyle = 'red'; // Usa cor diferente para distinguir
+            ctx.beginPath();
+            ctx.arc(fingerMiniX, fingerMiniY, fingerHitbox.r * 0.5, 0, 2 * Math.PI); // Raio menor
+            ctx.fill();
+        }
+
+        // Adiciona a borda
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.lineWidth = 5;
+        ctx.strokeRect(startX, startY, miniW, miniH);
+    }
 }
 
+// --- FUNÇÕES ML5.js E CÂMARA ---
 
-function selectShape(shape) {
-    currentShape = shape;   // As formas começam vazias
-    fillCounter = 0;
-    waterDrops.length = 0;
+// Inicializa a webcam e retorna o elemento de vídeo
+async function setupVideo() {
+    // Cria um elemento de vídeo no DOM (mas escondido)
+    video = document.createElement('video');
+    video.id = 'webcamVideo';
+    video.width = W;
+    video.height = H;
+    video.autoplay = true;
+    video.playsinline = true;
+    document.body.appendChild(video);
+    video.style.display = 'none'; // Esconde o elemento de vídeo original
+
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: W, height: H } });
+        video.srcObject = stream;
+        await new Promise(resolve => video.onloadedmetadata = resolve); // Espera o carregamento dos metadados
+        video.play();
+        isCameraLoaded = true;
+        return video;
+    } catch (e) {
+        console.error("Não foi possível aceder à câmara: ", e);
+        isCameraLoaded = false;
+        return null;
+    }
 }
 
-function isClickInCircle(x, y, circle) {
-    const distance = Math.sqrt(Math.pow(x - circle.x, 2) + Math.pow(y - circle.y, 2));
-    return distance <= circle.r;
+// Callback do ML5: Recebe a posição da mão
+function gotHands(results) {
+    hands = results;
+
+    if (hands.length > 0 && hands[0].index_finger_tip) {
+        let indexFingerTip = hands[0].index_finger_tip;
+
+        let mirroredX = W - indexFingerTip.x;
+
+        // Aplica suavização
+        fingerHitbox.x += (mirroredX - fingerHitbox.x) * fingerHitbox.smoothing;
+        fingerHitbox.y += (indexFingerTip.y - fingerHitbox.y) * fingerHitbox.smoothing;
+    }
 }
 
-function isClickInShape(x, y) {// A colisão para formas complexas é feita recriando o path e usando isPointInPath
-    ctx.beginPath();
+// Inicialização do ML5 e do loop de animação.
+async function initGame() {
+    canvas = document.getElementById('bolaCanvas');
+    if (!canvas) {
+        console.error("ERRO GRAVE: Elemento Canvas ('bolaCanvas') não encontrado! O jogo não pode iniciar.");
+        return;
+    }
+    ctx = canvas.getContext('2d');
+    if (!ctx) {
+        console.error("ERRO GRAVE: Não foi possível obter o contexto 2D do Canvas. O jogo não pode iniciar.");
+        return;
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // --- ADIÇÃO DOS EVENTOS DO RATO ---
+    // Move o ponteiro do rato
+    canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        mouseX = e.clientX - rect.left;
+        mouseY = e.clientY - rect.top;
+    });
+
+    // Ativa o flag de clique para o preenchimento
+    canvas.addEventListener('mousedown', (e) => {
+        isMouseDown = true;
+    });
+
+    // Desativa o flag de clique
+    canvas.addEventListener('mouseup', (e) => {
+        isMouseDown = false;
+    });
+    // --- FIM DA ADIÇÃO DOS EVENTOS DO RATO ---
+
+
+    // Inicia a câmara e espera
+    video = await setupVideo();
+
+    if (isCameraLoaded) {
+        console.log("A carregar modelo HandPose...");
+        handpose = await ml5.handPose({ flipped: false });
+        await handpose.detectStart(video, gotHands);
+        console.log("Deteção de mãos iniciada.");
+    }
+
+    // Adicionar listener para o clique (para os botões de UI)
+    canvas.addEventListener('click', function(event) {
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        if (isClickInCircle(x, y, bolaButtonRect)) {
+            selectShape('bola');
+        }  else if (isClickInCircle(x, y, tshirtButtonRect)) {
+            selectShape('tshirt');
+        } else if (isClickInCircle(x, y, phoneButtonRect)) {
+            selectShape('phone');
+        } else if (isClickInCircle(x, y, cupButtonRect)) {
+            selectShape('cup');
+        }
+        else if (isClickInCircle(x, y, emptyButtonRect) && fillCounter > 0) {
+            fillCounter = 0;
+            waterDrops.length = 0;
+            return;
+        }
+    });
+
+    animate();
+}
+
+// --- FUNÇÕES DE UTILIDADE ---
+
+function getShapePath() {
     const R = SHAPE_RADIUS;
+    const C = { x: centerX, y: centerY };
+
+    ctx.beginPath();
 
     if (currentShape === 'bola') {
         ctx.arc(centerX, centerY, SHAPE_RADIUS, 0, Math.PI * 2);
-    }  else if (currentShape === 'tshirt') {
-        const C = { x: centerX, y: centerY };
+    } else if (currentShape === 'tshirt') {
         const neckTopY = C.y - R * 1.0;
         const shoulderOutX = C.x + R * 1.1;
         const sleeveY = C.y - R * 0.3;
@@ -1132,7 +1298,6 @@ function isClickInShape(x, y) {// A colisão para formas complexas é feita recr
         const bottomY = C.y + R * 1.0;
         const bodyWidth = R * 1.8;
 
-        ctx.beginPath();
         ctx.lineTo(shoulderOutX, neckTopY);
         ctx.lineTo(shoulderOutX + R * 0.3, sleeveY);
         ctx.lineTo(C.x + R * 0.9, armpitY);
@@ -1144,7 +1309,6 @@ function isClickInShape(x, y) {// A colisão para formas complexas é feita recr
         ctx.arc(C.x, neckTopY, R * 0.25, Math.PI, 0);
         ctx.closePath();
     } else if (currentShape === 'phone') {
-        const C = { x: centerX, y: centerY };
         const width = R * 1.5;
         const height = R * 2.5;
         const borderRadius = R * 0.2;
@@ -1162,19 +1326,47 @@ function isClickInShape(x, y) {// A colisão para formas complexas é feita recr
         ctx.arcTo(x, y, x + borderRadius, y, borderRadius);
         ctx.closePath();
     } else if (currentShape === 'cup') {
-        const C = { x: centerX, y: centerY };
         const topY = C.y - R * 0.8;
         const bottomY = C.y + R * 1.0;
         const topWidth = R * 1.0;
         const bottomWidth = R * 0.8;
 
-        ctx.moveTo(C.x - topWidth / 2, topY);
+        ctx.moveTo(C.x - topWidth / 2.5, topY);
         ctx.lineTo(C.x + topWidth / 1.5, topY);
         ctx.lineTo(C.x + bottomWidth / 1.19, bottomY);
         ctx.lineTo(C.x - bottomWidth / 2.5, bottomY);
         ctx.closePath();
     }
+}
+
+// Colisão: Verifica se o ponto está dentro da área da forma
+function checkFingerInShape(x, y) {
+    getShapePath();
     return ctx.isPointInPath(x, y);
+}
+
+function checkPointInShapePath(x, y) {
+    getShapePath();
+    return ctx.isPointInPath(x, y);
+}
+
+function selectShape(shape) {
+    currentShape = shape;
+    fillCounter = 0;
+    waterDrops.length = 0;
+}
+
+function isClickInCircle(x, y, circle) {
+    const distance = Math.sqrt(Math.pow(x - circle.x, 2) + Math.pow(y - circle.y, 2));
+    return distance <= circle.r;
+}
+
+
+// Loop de animação
+function animate() {
+    draw();
+    updateEmptyButtonAnimation();
+    requestAnimationFrame(animate);
 }
 
 // --- LÓGICA DO SPLASH SCREEN ---
@@ -1182,20 +1374,18 @@ function isClickInShape(x, y) {// A colisão para formas complexas é feita recr
 function initSplash() {
     const splashScreenElement = document.getElementById('splash-screen');
     if (!splashScreenElement) {
-         // Se não houver splash screen, inicia o jogo principal diretamente
-        init();
+        initGame();
         return;
     }
 
     splashCanvas = document.createElement('canvas');
     splashCanvas.id = 'splashCanvas';
-    splashScreenElement.prepend(splashCanvas); // Adiciona o canvas antes de tudo no splash
+    splashScreenElement.prepend(splashCanvas);
 
     splashCtx = splashCanvas.getContext('2d');
     resizeSplashCanvas();
     window.addEventListener('resize', resizeSplashCanvas);
 
-    // Inicializa as bolhas
     for (let i = 0; i < NUM_BUBBLES; i++) {
         bubbles.push(new Bubble(splashCanvas.width, splashCanvas.height));
     }
@@ -1208,7 +1398,6 @@ function resizeSplashCanvas() {
     splashCanvas.width = window.innerWidth;
     splashCanvas.height = window.innerHeight;
 
-    // Atualiza as dimensões nas bolhas para que possam se reposicionar
     bubbles.forEach(bubble => {
         bubble.w = splashCanvas.width;
         bubble.h = splashCanvas.height;
@@ -1218,7 +1407,6 @@ function resizeSplashCanvas() {
 function animateSplash() {
     if (!splashCtx) return;
 
-    // Desenha o fundo da água (gradiente azul escuro)
     const gradientBackground = splashCtx.createLinearGradient(0, 0, 0, splashCanvas.height);
     gradientBackground.addColorStop(0, `hsl(200, 80%, 20%)`);
     gradientBackground.addColorStop(0.5, `hsl(210, 70%, 30%)`);
@@ -1227,108 +1415,20 @@ function animateSplash() {
     splashCtx.fillStyle = gradientBackground;
     splashCtx.fillRect(0, 0, splashCanvas.width, splashCanvas.height);
 
-    // Desenha e atualiza as bolhas
     bubbles.forEach(bubble => {
         bubble.update();
         bubble.draw(splashCtx);
     });
 
-    // Se o splash screen ainda está visível, continua o loop
     const splash = document.getElementById('splash-screen');
     if (splash && splash.classList.contains('visible')) {
         requestAnimationFrame(animateSplash);
     } else {
-        // Quando o splash termina, remove o canvas e inicia o jogo principal
         splashCanvas.remove();
         window.removeEventListener('resize', resizeSplashCanvas);
-        init(); // Chama o init do jogo principal
+        initGame();
     }
 }
 
 
-// Inicialização e eventos - A função que realmente inicia o jogo
-function init() {
-    canvas = document.getElementById('bolaCanvas');
-    if (!canvas) {
-        console.error("ERRO GRAVE: Elemento Canvas ('bolaCanvas') não encontrado! O jogo não pode iniciar.");
-        return;
-    }
-    // Otimização: Garantir que ctx está ligado ao canvas correto
-    ctx = canvas.getContext('2d');
-    if (!ctx) {
-        console.error("ERRO GRAVE: Não foi possível obter o contexto 2D do Canvas. O jogo não pode iniciar.");
-        return;
-    }
-
-    // Chamada a resizeCanvas() para definir W/H e centralizar
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas(); // Chama o redimensionamento inicial aqui para definir centerX/Y e W/H
-
-    // Detetar Houver
-    canvas.addEventListener('mousemove', function(event) {
-        if (!mascotFish) return;
-
-        const rect = canvas.getBoundingClientRect();
-        const mouseX = event.clientX - rect.left;
-        const mouseY = event.clientY - rect.top;
-
-        // Verifica a distância do rato ao centro da Mascote
-        const distance = Math.sqrt(
-            Math.pow(mouseX - mascotFish.x, 2) + Math.pow(mouseY - mascotFish.y, 2)
-        );
-
-        // Atualiza o estado de hover se o rato estiver dentro da hitbox
-        isMascotHovered = distance <= mascotFish.hitboxR;
-    });
-
-
-    // Adicionar listener para o clique (que dispara as gotas)
-    canvas.addEventListener('click', function(event) {
-        const rect = canvas.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
-
-        if (isClickInCircle(x, y, bolaButtonRect)) {
-            selectShape('bola');
-        }  else if (isClickInCircle(x, y, tshirtButtonRect)) {
-            selectShape('tshirt');
-        } else if (isClickInCircle(x, y, phoneButtonRect)) {
-            selectShape('phone');
-        } else if (isClickInCircle(x, y, cupButtonRect)) {
-            selectShape('cup');
-        }
-
-        else if (isClickInCircle(x, y, emptyButtonRect) && fillCounter > 0) {
-            // Esvaziar a forma e reiniciar contadores
-            fillCounter = 0;
-            waterDrops.length = 0;
-            return;
-        }
-
-        else if (isClickInShape(x, y) && fillCounter < TOTAL_FILL_STEPS) {
-            const maxCapacity = totalCapacity[currentShape];
-            const litersPerStep = maxCapacity / TOTAL_FILL_STEPS;
-            totalLitersConsumed += litersPerStep * EMISSION_RATE;
-
-            for (let i = 0; i < EMISSION_RATE; i++) {
-                if (fillCounter < TOTAL_FILL_STEPS) {
-                    waterDrops.push(new Gota(x, y)); // Emissão da gota no lick
-                }
-            }
-        }
-    });
-
-    // Inicia o loop de animação
-    animate();
-}
-
-// Loop de animação
-function animate() {
-    draw();
-    // Atualiza a animação de opacidade e escala em cada frame
-    updateEmptyButtonAnimation();
-    requestAnimationFrame(animate);
-}
-
-// Ponto de entrada final: Inicia o Splash Screen, que depois chama init()
 window.addEventListener('load', initSplash);

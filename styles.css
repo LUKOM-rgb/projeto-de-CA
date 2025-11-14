@@ -23,7 +23,13 @@ canvas {
     box-shadow: none;
     cursor: default;
 }
+video {
+    display: none;
+}
 
+#webcamVideo {
+    display: none !important;
+}
 /* --- ESTILOS ADICIONAIS PARA O SPLASH SCREEN --- */
 
 /* Estilos para o novo Canvas do Splash Screen (onde as bolhas animam) */
