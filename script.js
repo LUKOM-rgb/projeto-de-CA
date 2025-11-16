@@ -1,8 +1,3 @@
-let canvas;
-let ctx;
-let W;
-let H;
-
 // Variáveis ML5  e camará
 let video;
 let handpose;
@@ -14,14 +9,13 @@ let fingerHitbox = { x: 0, y: 0, r: 10, smoothing: 0.2 };
 let mouseX = 0;
 let mouseY = 0;
 let isMouseDown = false;
-let isFillingActive = false;
 
 
 // Intro variaveis
 let splashCanvas;
 let splashCtx;
 const bubbles = [];
-const NUM_BUBBLES = 50;
+const NUM_BUBBLES = 200;
 
 // constantes e sistemas de física
 const GRAVITY = 0.1;
@@ -546,7 +540,7 @@ function drawPhone() {
     ctx.arc(C.x, y + R*0.3, R*0.05, 0, Math.PI * 2);
     ctx.fillStyle = 'black';
     ctx.fill();
-
+   //butaozinho
     ctx.beginPath();
     ctx.arc(C.x, y + R*2.2, R*0.10, 0, Math.PI * 2);
     ctx.strokeStyle = 'white';
@@ -565,9 +559,6 @@ function drawBolaPattern() {
     const radius = SHAPE_RADIUS;
     const numPentagons = 3;
     const pentagonRadius = radius * 0.4;
-    const rotationSpeed = Date.now() / 5000;
-
-    ctx.rotate(rotationSpeed);
 
     for (let i = 0; i < numPentagons; i++) {
         const angle = (i / numPentagons) * (Math.PI * 2);
@@ -614,18 +605,8 @@ function drawWaterLevel() {// Calcúla a altura máxima e define o ponto de part
     let shapeMaxHeight = maxWaterHeight;
     let shapeBottomY = centerY + SHAPE_RADIUS;
     const R = SHAPE_RADIUS;
-
-    if (currentShape === 'phone') {
-        shapeMaxHeight = R * 2.5;
-        shapeBottomY = centerY + R * 2.5 / 2;
-    } else if (currentShape === 'cup') {
-        shapeMaxHeight = R * 1.8;
-        shapeBottomY = centerY + R * 1.0;
-    }
-
     const waterHeight = (fillCounter / TOTAL_FILL_STEPS) * shapeMaxHeight;
     const waterY = shapeBottomY - waterHeight;
-
     ctx.save();
 
     // 1. Cria a máscara (Clipping Path)
@@ -652,7 +633,6 @@ function drawWaterLevel() {// Calcúla a altura máxima e define o ponto de part
         ctx.lineTo(C.x - R * 0.9, armpitY);
         ctx.lineTo(C.x - R * 1.1 - R * 0.3, sleeveY);
         ctx.lineTo(C.x - R * 1.1, neckTopY);
-        ctx.arc(C.x, neckTopY, R * 0.25, Math.PI, 0);
         ctx.closePath();
     } else if (currentShape === 'phone') {
         // Clipping telemóvel
@@ -1424,6 +1404,5 @@ function animateSplash() {
         initGame();
     }
 }
-
 
 window.addEventListener('load', initSplash);
